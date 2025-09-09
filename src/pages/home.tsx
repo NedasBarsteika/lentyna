@@ -4,6 +4,7 @@ import '../App.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
+// For testing purposes
 function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
