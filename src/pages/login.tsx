@@ -1,4 +1,4 @@
-// src/pages/signUp.tsx
+// src/pages/login.tsx
 import { motion } from "framer-motion";
 import "../App.css";
 import NavbarOnlyLogo from "../components/NavbarOnlyLogo";
@@ -6,13 +6,14 @@ import Footer from "../components/Footer";
 import { useState } from "react";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import { mockLogin } from "../mockData";
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [formData, setFormData] = useState({
-    email: "",
+    usernameOrEmail: "",
     password: "",
   });
 
@@ -27,34 +28,42 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.email || !formData.password) {
+    if (!formData.usernameOrEmail || !formData.password) {
       setError("Įveskite prisijungimo duomenis");
       return;
     }
 
     setLoading(true);
 
-    await axios
-      .post("https://localhost:7296/user/login", {
-        email: formData.email,
+    // Try backend first, fallback to mock data
+    try {
+      const response = await axios.post("https://localhost:7296/user/login", {
+        usernameOrEmail: formData.usernameOrEmail,
         password: formData.password,
-      })
-      .then(function (response: any) {
-        if (response.status === 200) {
-          const token = response.data.token;
-          const user = response.data.user;
-          localStorage.setItem("authToken", token);
-          localStorage.setItem("user", JSON.stringify(user));
-          document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
-          const previousPage = location.state?.from || "/";
-          navigate(previousPage, { replace: true });
-        } else if (response.status === 500) {
-          setError("Serverio klaida. Bandykite kitą kartą.");
-        }
-      })
-      .catch(function (error: any) {
-        setError(error.response.data);
       });
+
+      if (response.status === 200) {
+        const token = response.data.token;
+        const user = response.data.user;
+        localStorage.setItem("authToken", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
+        const previousPage = location.state?.from || "/";
+        navigate(previousPage, { replace: true });
+      }
+    } catch (error: any) {
+      // If backend is not available, use mock login
+      console.log("Backend nepasiekiamas, naudojami mock duomenys");
+      const result = mockLogin(formData.usernameOrEmail, formData.password);
+
+      if (result.success) {
+        document.cookie = `token=${result.token}; path=/; max-age=3600; Secure; SameSite=Strict`;
+        const previousPage = location.state?.from || "/";
+        navigate(previousPage, { replace: true });
+      } else {
+        setError(result.error);
+      }
+    }
 
     setLoading(false);
   };
@@ -82,10 +91,10 @@ function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
-                type="email"
-                name="email"
-                placeholder="El. paštas"
-                value={formData.email}
+                type="text"
+                name="usernameOrEmail"
+                placeholder="Slapyvardis arba el. paštas"
+                value={formData.usernameOrEmail}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required

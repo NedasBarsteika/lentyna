@@ -6,13 +6,13 @@ import Footer from "../components/Footer";
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { mockRegister } from "../mockData";
 
 function SignUpPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: "",
-    surname: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -29,9 +29,9 @@ function SignUpPage() {
     e.preventDefault();
     setError(null);
 
+    // Validation
     if (
-      !formData.name ||
-      !formData.surname ||
+      !formData.username ||
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword
@@ -47,24 +47,34 @@ function SignUpPage() {
 
     setLoading(true);
 
-    await axios
-      .post("https://localhost:7296/user/register", {
-        name: formData.name,
-        surname: formData.surname,
+    // Try backend first, fallback to mock data
+    try {
+      const response = await axios.post("https://localhost:7296/user/register", {
+        username: formData.username,
         email: formData.email,
         password: formData.password,
-      })
-      .then(function (response: any) {
-        if (response.status === 200) {
-          alert("Registracija sėkminga!");
-          navigate("/prisijungimas");
-        } else if (response.status === 500) {
-          setError("Serverio klaida. Bandykite kitą kartą.");
-        }
-      })
-      .catch(function (error: any) {
-        setError(error.response.data);
       });
+
+      if (response.status === 200) {
+        alert("Registracija sėkminga!");
+        navigate("/prisijungimas");
+      }
+    } catch (error: any) {
+      // If backend is not available, use mock registration
+      console.log("Backend nepasiekiamas, naudojami mock duomenys");
+      const result = mockRegister(
+        formData.username,
+        formData.email,
+        formData.password
+      );
+
+      if (result.success) {
+        alert("Registracija sėkminga! (mock duomenys)");
+        navigate("/prisijungimas");
+      } else {
+        setError(result.error);
+      }
+    }
 
     setLoading(false);
   };
@@ -93,21 +103,13 @@ function SignUpPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
-                name="name"
-                placeholder="Vardas"
-                value={formData.name}
+                name="username"
+                placeholder="Slapyvardis"
+                value={formData.username}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
-              />
-              <input
-                type="text"
-                name="surname"
-                placeholder="Pavardė"
-                value={formData.surname}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
+                minLength={3}
               />
               <input
                 type="email"
@@ -126,6 +128,7 @@ function SignUpPage() {
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
+                minLength={6}
               />
               <input
                 type="password"

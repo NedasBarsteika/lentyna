@@ -10,7 +10,7 @@ const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState<{ name: string; surname: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; role?: string } | null>(null);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -35,9 +35,10 @@ const Navbar: React.FC = () => {
 
     if (token && storedUser) {
       setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-      const adminStatus = JSON.parse(localStorage.getItem("user") || '{}').isAdmin;
-      if (adminStatus === true) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      // Check if user has admin role
+      if (parsedUser.role === 'admin') {
         setIsAdmin(true);
       }
     }
@@ -50,7 +51,7 @@ const Navbar: React.FC = () => {
           to="/"
           className="font-semibold block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent text-2xl"
         >
-          Gymvenience
+          Lentyna.lt
         </Link>
         <button
           onClick={toggleMenu}
@@ -80,37 +81,47 @@ const Navbar: React.FC = () => {
           <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-black-100 rounded-lg bg-black-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-black dark:bg-black-800 md:dark:bg-black-900 dark:border-gray-700">
             <li>
               <Link
-                to="/parduotuve"
+                to="/knygos"
                 className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
               >
-                Parduotuvė
+                Knygos
               </Link>
             </li>
             <li>
-              <a
-                href="/treneriai"
+              <Link
+                to="/autoriai"
                 className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
               >
-                Treneriai
-              </a>
+                Autoriai
+              </Link>
             </li>
+            {isAuthenticated && (
+              <li>
+                <Link
+                  to="/mano-knygos"
+                  className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
+                >
+                  Knygų sąrašas
+                </Link>
+              </li>
+            )}
             <li>
-              <a
-                href="/apie"
+              <Link
+                to="/forumas"
                 className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
               >
-                Apie
-              </a>
+                Forumas
+              </Link>
             </li>
             {isAuthenticated ? (
               <li className="relative">
                 <button onClick={toggleDropdown} className="flex items-center space-x-1 focus:outline-none hover:cursor-pointer">
-                  <img src="/Images/avatar.png" alt="Avatar" className="rounded-full w-7 h-7" />
+                  <img src="/images/avatar.png" alt="Avatar" className="rounded-full w-7 h-7" />
                   <span className="text-white">&#9662;</span>
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <div className="px-4 py-2 text-sm text-gray-700">{user?.name} {user?.surname}</div>
+                    <div className="px-4 py-2 text-sm text-gray-700 font-semibold">{user?.username}</div>
                     <Link to="/profilis" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profilis</Link>
                     {isAdmin && (
                       <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin puslapis</Link>
@@ -124,7 +135,7 @@ const Navbar: React.FC = () => {
             ) : (
               <li className="relative">
                 <button onClick={toggleDropdown} className="focus:outline-none hover:cursor-pointer">
-                  <img src="/Images/avatar.png" alt="Avatar" className="rounded-full w-7 h-7" />
+                  <img src="/images/avatar.png" alt="Avatar" className="rounded-full w-7 h-7" />
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
