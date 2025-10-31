@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import ImageUpload from '../../components/ImageUpload';
 import axios from 'axios';
 
 function AuthorFormPage() {
@@ -14,10 +15,11 @@ function AuthorFormPage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    biography: '',
-    photoUrl: ''
+    biography: ''
   });
 
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,9 +36,9 @@ function AuthorFormPage() {
       setFormData({
         firstName: author.firstName,
         lastName: author.lastName,
-        biography: author.biography,
-        photoUrl: author.photoUrl || ''
+        biography: author.biography
       });
+      setCurrentPhotoUrl(author.photoUrl || '');
     } catch (err) {
       setError('Nepavyko užkrauti autoriaus informacijos');
     }
@@ -59,18 +61,31 @@ function AuthorFormPage() {
 
     try {
       const token = localStorage.getItem('authToken');
+
+      // Create FormData for multipart upload
+      const submitData = new FormData();
+      submitData.append('firstName', formData.firstName);
+      submitData.append('lastName', formData.lastName);
+      submitData.append('biography', formData.biography);
+
+      // Append photo file if a new one was uploaded
+      if (photo) {
+        submitData.append('photo', photo);
+      }
+
       const config = {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       };
 
       if (isEditMode) {
-        await axios.put(`https://localhost:7296/api/authors/${id}`, formData, config);
+        await axios.put(`https://localhost:7296/api/authors/${id}`, submitData, config);
         alert('Autorius sėkmingai atnaujintas!');
         navigate(`/autoriai/${id}`);
       } else {
-        const response = await axios.post('https://localhost:7296/api/authors', formData, config);
+        const response = await axios.post('https://localhost:7296/api/authors', submitData, config);
         alert('Autorius sėkmingai sukurtas!');
         navigate(`/autoriai/${response.data.id}`);
       }
@@ -142,32 +157,13 @@ function AuthorFormPage() {
             />
           </div>
 
-          <div>
-            <label className="block font-semibold mb-2">Nuotraukos URL</label>
-            <input
-              type="url"
-              name="photoUrl"
-              value={formData.photoUrl}
-              onChange={handleChange}
-              placeholder="https://..."
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-            {formData.photoUrl && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-600 mb-2">Nuotraukos peržiūra:</p>
-                <div className="w-32 h-32 rounded-lg overflow-hidden border">
-                  <img
-                    src={formData.photoUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <ImageUpload
+            value={photo}
+            onChange={setPhoto}
+            currentImageUrl={currentPhotoUrl}
+            label="Autoriaus nuotrauka"
+            maxSizeMB={5}
+          />
 
           <div className="flex gap-4">
             <button

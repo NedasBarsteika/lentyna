@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import ImageUpload from '../../components/ImageUpload';
 import { MultiSelect } from '../../components/MultiSelect';
 import type { Author } from '../../types';
 import { BookMood } from '../../types';
@@ -50,17 +51,17 @@ function BookFormPage() {
     publishYear: number;
     genres: string[];
     mood: BookMood;
-    coverImageUrl: string;
   }>({
     title: '',
     description: '',
     authorId: '',
     publishYear: new Date().getFullYear(),
     genres: [],
-    mood: BookMood.NEUTRAL,
-    coverImageUrl: ''
+    mood: BookMood.NEUTRAL
   });
 
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,9 +104,9 @@ function BookFormPage() {
           authorId: book.authorId,
           publishYear: book.publishYear,
           genres: book.genres,
-          mood: book.mood,
-          coverImageUrl: book.coverImageUrl || ''
+          mood: book.mood
         });
+        setCurrentCoverImageUrl(book.coverImageUrl || '');
       }
     } catch (err) {
       setError('Nepavyko užkrauti knygos informacijos');
@@ -140,17 +141,37 @@ function BookFormPage() {
 
     try {
       const token = localStorage.getItem('authToken');
+
+      // Create FormData for multipart upload
+      const submitData = new FormData();
+      submitData.append('title', formData.title);
+      submitData.append('description', formData.description);
+      submitData.append('authorId', formData.authorId);
+      submitData.append('publishYear', formData.publishYear.toString());
+      submitData.append('mood', formData.mood);
+
+      // Append each genre individually
+      formData.genres.forEach((genre) => {
+        submitData.append('genres', genre);
+      });
+
+      // Append cover image file if a new one was uploaded
+      if (coverImage) {
+        submitData.append('coverImage', coverImage);
+      }
+
       const config = {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       };
 
       if (isEditMode) {
-        await axios.put(`https://localhost:7296/api/books/${id}`, formData, config);
+        await axios.put(`https://localhost:7296/api/books/${id}`, submitData, config);
         alert('Knyga sėkmingai atnaujinta!');
       } else {
-        const response = await axios.post('https://localhost:7296/api/books', formData, config);
+        const response = await axios.post('https://localhost:7296/api/books', submitData, config);
         alert('Knyga sėkmingai sukurta!');
         navigate(`/knygos/${response.data.id}`);
       }
@@ -265,17 +286,13 @@ function BookFormPage() {
             />
           </div>
 
-          <div>
-            <label className="block font-semibold mb-2">Viršelio nuotrauka (URL)</label>
-            <input
-              type="url"
-              name="coverImageUrl"
-              value={formData.coverImageUrl}
-              onChange={handleChange}
-              placeholder="https://..."
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
+          <ImageUpload
+            value={coverImage}
+            onChange={setCoverImage}
+            currentImageUrl={currentCoverImageUrl}
+            label="Knygos viršelis"
+            maxSizeMB={5}
+          />
 
           <div className="flex gap-4">
             <button
