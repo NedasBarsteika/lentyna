@@ -1,22 +1,26 @@
 // src/pages/forum/TopicFormPage.tsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import axios from 'axios';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import axios from "axios";
 
 function TopicFormPage() {
+  const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: ''
+    title: "",
+    description: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -25,24 +29,28 @@ function TopicFormPage() {
     setError(null);
 
     if (!formData.title.trim() || !formData.description.trim()) {
-      setError('Užpildykite visus laukus');
+      setError("Užpildykite visus laukus");
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await axios.post('https://localhost:7296/api/forum/topics', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const token = localStorage.getItem("authToken");
+      const response = await axios.post(
+        "https://localhost:7296/api/forum/topics",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
-      alert('Tema sėkmingai sukurta!');
+      alert("Tema sėkmingai sukurta!");
       navigate(`/forumas/${response.data.id}`);
     } catch (err: any) {
-      setError(err.response?.data || 'Nepavyko sukurti temos');
+      setError(err.response?.data || "Nepavyko sukurti temos");
     } finally {
       setLoading(false);
     }
@@ -59,7 +67,9 @@ function TopicFormPage() {
         transition={{ duration: 0.5 }}
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
-        <h1 className="text-4xl font-bold mb-6">Sukurti naują temą</h1>
+        <h1 className="text-4xl font-bold mb-6">
+          {isEditMode ? "Redaguoti temą" : "Sukurti naują temą"}
+        </h1>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -67,7 +77,10 @@ function TopicFormPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-lg p-6 space-y-6"
+        >
           <div>
             <label className="block font-semibold mb-2">Pavadinimas *</label>
             <input
@@ -100,11 +113,11 @@ function TopicFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? 'Kuriama...' : 'Sukurti temą'}
+              {isEditMode ? "Redaguoti temą" : "Sukurti temą"}
             </button>
             <button
               type="button"
-              onClick={() => navigate('/forumas')}
+              onClick={() => navigate("/forumas")}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
               Atšaukti
