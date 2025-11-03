@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import type { Book, Review } from '../../types';
-import { BookMood } from '../../types';
 import axios from 'axios';
 import { mockBooks, mockReviews } from '../../mockData';
 
@@ -101,18 +100,6 @@ function BookDetailsPage() {
     }
   };*/
 
-  const getMoodText = (mood: BookMood) => {
-    switch (mood) {
-      case BookMood.HAPPY:
-        return 'Džiugi';
-      case BookMood.SAD:
-        return 'Liūdna';
-      case BookMood.NEUTRAL:
-        return 'Neutrali';
-      default:
-        return '';
-    }
-  };
 
   if (loading) {
     return (
@@ -224,11 +211,6 @@ function BookDetailsPage() {
 
               <p className="text-gray-600 mb-4">Leidimo metai: {book.publishYear}</p>
 
-              <div className="mb-4">
-                <span className="font-semibold">Nuotaika: </span>
-                <span className="text-gray-700">{getMoodText(book.mood)}</span>
-              </div>
-
               {book.averageRating && (
                 <div className="flex items-center mb-4">
                   <span className="text-yellow-500 text-2xl mr-2">⭐</span>
@@ -238,18 +220,27 @@ function BookDetailsPage() {
               )}
 
               <div className="mb-4">
-                <h3 className="font-semibold mb-2">Žanrai:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {book.genres.map((genre, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                </div>
+                <h3 className="font-semibold mb-2">Žanras:</h3>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+                  {book.genre?.pavadinimas || 'Nežinomas žanras'}
+                </span>
               </div>
+
+              {book.genre?.moods && book.genre.moods.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Nuotaikos:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {book.genre.moods.map((mood) => (
+                      <span
+                        key={mood.id}
+                        className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full"
+                      >
+                        {mood.pavadinimas}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <h3 className="font-semibold mb-2">Aprašymas:</h3>

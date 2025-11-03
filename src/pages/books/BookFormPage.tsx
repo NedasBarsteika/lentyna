@@ -5,38 +5,9 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ImageUpload from '../../components/ImageUpload';
-import { MultiSelect } from '../../components/MultiSelect';
-import type { Author } from '../../types';
-import { BookMood } from '../../types';
+import type { Author, Genre } from '../../types';
 import axios from 'axios';
-import { mockAuthors, mockBooks } from '../../mockData';
-
-// Available genre options
-const GENRE_OPTIONS = [
-  { value: 'Istorinis romanas', label: 'Istorinis romanas' },
-  { value: 'Lietuvių literatūra', label: 'Lietuvių literatūra' },
-  { value: 'Šeimos saga', label: 'Šeimos saga' },
-  { value: 'Jaunimo literatūra', label: 'Jaunimo literatūra' },
-  { value: 'Karo drama', label: 'Karo drama' },
-  { value: 'Poezija', label: 'Poezija' },
-  { value: 'Filosofinė poezija', label: 'Filosofinė poezija' },
-  { value: 'Šiuolaikinė proza', label: 'Šiuolaikinė proza' },
-  { value: 'Psichologinis romanas', label: 'Psichologinis romanas' },
-  { value: 'Maginis realizmas', label: 'Maginis realizmas' },
-  { value: 'Socialinė drama', label: 'Socialinė drama' },
-  { value: 'Romantiška drama', label: 'Romantiška drama' },
-  { value: 'Fantastika', label: 'Fantastika' },
-  { value: 'Mokslinė fantastika', label: 'Mokslinė fantastika' },
-  { value: 'Detektyvas', label: 'Detektyvas' },
-  { value: 'Trileris', label: 'Trileris' },
-  { value: 'Nuotykių romanas', label: 'Nuotykių romanas' },
-  { value: 'Biografija', label: 'Biografija' },
-  { value: 'Autobiografija', label: 'Autobiografija' },
-  { value: 'Esė', label: 'Esė' },
-  { value: 'Drama', label: 'Drama' },
-  { value: 'Komedija', label: 'Komedija' },
-  { value: 'Klasika', label: 'Klasika' }
-];
+import { mockAuthors, mockBooks, mockGenres } from '../../mockData';
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -44,20 +15,19 @@ function BookFormPage() {
   const isEditMode = !!id;
 
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
     authorId: string;
     publishYear: number;
-    genres: string[];
-    mood: BookMood;
+    genreId: string;
   }>({
     title: '',
     description: '',
     authorId: '',
     publishYear: new Date().getFullYear(),
-    genres: [],
-    mood: BookMood.NEUTRAL
+    genreId: ''
   });
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
@@ -67,6 +37,7 @@ function BookFormPage() {
 
   useEffect(() => {
     fetchAuthors();
+    fetchGenres();
     if (isEditMode) {
       fetchBook();
     }
@@ -93,6 +64,15 @@ function BookFormPage() {
     }
   };
 
+  const fetchGenres = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setGenres(mockGenres);
+    } catch (err) {
+      console.error('Failed to fetch genres', err);
+    }
+  };
+
   const fetchBook = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -103,8 +83,7 @@ function BookFormPage() {
           description: book.description,
           authorId: book.authorId,
           publishYear: book.publishYear,
-          genres: book.genres,
-          mood: book.mood
+          genreId: book.genreId
         });
         setCurrentCoverImageUrl(book.coverImageUrl || '');
       }
@@ -115,24 +94,14 @@ function BookFormPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-
-    // Handle mood field specially to ensure correct type
-    if (name === 'mood') {
-      setFormData({ ...formData, [name]: value as BookMood });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
-  const handleGenresChange = (selectedGenres: string[]) => {
-    setFormData({ ...formData, genres: selectedGenres });
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.title || !formData.description || !formData.authorId || formData.genres.length === 0) {
+    if (!formData.title || !formData.description || !formData.authorId || !formData.genreId) {
       setError('Užpildykite visus privalomus laukus');
       return;
     }
@@ -148,12 +117,7 @@ function BookFormPage() {
       submitData.append('description', formData.description);
       submitData.append('authorId', formData.authorId);
       submitData.append('publishYear', formData.publishYear.toString());
-      submitData.append('mood', formData.mood);
-
-      // Append each genre individually
-      formData.genres.forEach((genre) => {
-        submitData.append('genres', genre);
-      });
+      submitData.append('genreId', formData.genreId);
 
       // Append cover image file if a new one was uploaded
       if (coverImage) {
@@ -261,29 +225,26 @@ function BookFormPage() {
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Nuotaika *</label>
+            <label className="block font-semibold mb-2">Žanras *</label>
             <select
-              name="mood"
-              value={formData.mood}
+              name="genreId"
+              value={formData.genreId}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg"
               required
             >
-              <option value={BookMood.HAPPY}>Džiugi</option>
-              <option value={BookMood.SAD}>Liūdna</option>
-              <option value={BookMood.NEUTRAL}>Neutrali</option>
+              <option value="">Pasirinkite žanrą</option>
+              {genres.map((genre) => (
+                <option key={genre.id} value={genre.id}>
+                  {genre.pavadinimas}
+                </option>
+              ))}
             </select>
-          </div>
-
-          <div>
-            <MultiSelect
-              label="Žanrai *"
-              options={GENRE_OPTIONS}
-              value={formData.genres}
-              onChange={handleGenresChange}
-              placeholder="Pasirinkite žanrus..."
-              className="w-full"
-            />
+            {formData.genreId && (
+              <p className="mt-2 text-sm text-gray-600">
+                Nuotaikos: {genres.find(g => g.id === formData.genreId)?.moods?.map(m => m.pavadinimas).join(', ')}
+              </p>
+            )}
           </div>
 
           <ImageUpload

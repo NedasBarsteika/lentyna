@@ -26,6 +26,20 @@ export const BookshelfStatus = {
 
 export type BookshelfStatus = typeof BookshelfStatus[keyof typeof BookshelfStatus];
 
+// Mood Types (Nuotaika)
+export interface Mood {
+  id: string;
+  pavadinimas: string; // "Džiugi", "Liūdna", "Neutrali"
+}
+
+// Genre Types (Žanras)
+export interface Genre {
+  id: string;
+  pavadinimas: string;
+  moodIds: string[]; // Many-to-many relationship with Moods
+  moods?: Mood[]; // Populated moods
+}
+
 // User Types
 export interface User {
   id: string;
@@ -62,8 +76,8 @@ export interface Book {
   authorId: string;
   author?: Author;
   publishYear: number;
-  genres: string[];
-  mood: BookMood;
+  genreId: string; // One genre (changed from genres: string[])
+  genre?: Genre; // Populated genre with moods
   coverImageUrl?: string;
   averageRating?: number;
   reviewCount?: number;
@@ -76,15 +90,14 @@ export interface BookCreateDto {
   description: string;
   authorId: string;
   publishYear: number;
-  genres: string[];
-  mood: BookMood;
+  genreId: string; // Changed from genres: string[]
   coverImageUrl?: string;
 }
 
 export interface BookSearchDto {
   scenarioDescription?: string;
-  genres?: string[];
-  moods?: BookMood[];
+  genreIds?: string[]; // Changed from genres: string[]
+  moodIds?: string[]; // Changed from moods: BookMood[]
   authorId?: string;
   minYear?: number;
   maxYear?: number;

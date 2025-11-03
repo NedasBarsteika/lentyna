@@ -1,7 +1,7 @@
 // src/mockData.ts - Mock data for development without backend
 
-import type { Book, Author, Review, ForumTopic, ForumComment, BookshelfEntry, BookClubWeek, User } from './types';
-import { BookMood, BookshelfStatus, UserRole } from './types';
+import type { Book, Author, Review, ForumTopic, ForumComment, BookshelfEntry, BookClubWeek, User, Mood, Genre } from './types';
+import { BookshelfStatus, UserRole } from './types';
 
 // Mock Users with passwords for local testing
 // Passwords: admin123, editor123, mod123, reader123
@@ -93,6 +93,98 @@ export const mockAuthors: Author[] = [
   }
 ];
 
+// Mock Moods (Nuotaikos)
+export const mockMoods: Mood[] = [
+  {
+    id: '1',
+    pavadinimas: 'Džiugi'
+  },
+  {
+    id: '2',
+    pavadinimas: 'Liūdna'
+  },
+  {
+    id: '3',
+    pavadinimas: 'Neutrali'
+  }
+];
+
+// Mock Genres (Žanrai)
+export const mockGenres: Genre[] = [
+  {
+    id: '1',
+    pavadinimas: 'Istorinis romanas',
+    moodIds: ['2', '3'], // Liūdna, Neutrali
+    moods: [mockMoods[1], mockMoods[2]]
+  },
+  {
+    id: '2',
+    pavadinimas: 'Lietuvių literatūra',
+    moodIds: ['1', '3'], // Džiugi, Neutrali
+    moods: [mockMoods[0], mockMoods[2]]
+  },
+  {
+    id: '3',
+    pavadinimas: 'Šeimos saga',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '4',
+    pavadinimas: 'Jaunimo literatūra',
+    moodIds: ['2'], // Liūdna
+    moods: [mockMoods[1]]
+  },
+  {
+    id: '5',
+    pavadinimas: 'Karo drama',
+    moodIds: ['2'], // Liūdna
+    moods: [mockMoods[1]]
+  },
+  {
+    id: '6',
+    pavadinimas: 'Poezija',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '7',
+    pavadinimas: 'Filosofinė poezija',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '8',
+    pavadinimas: 'Šiuolaikinė proza',
+    moodIds: ['1', '3'], // Džiugi, Neutrali
+    moods: [mockMoods[0], mockMoods[2]]
+  },
+  {
+    id: '9',
+    pavadinimas: 'Psichologinis romanas',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '10',
+    pavadinimas: 'Maginis realizmas',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '11',
+    pavadinimas: 'Socialinė drama',
+    moodIds: ['3'], // Neutrali
+    moods: [mockMoods[2]]
+  },
+  {
+    id: '12',
+    pavadinimas: 'Romantiška drama',
+    moodIds: ['1'], // Džiugi
+    moods: [mockMoods[0]]
+  }
+];
+
 // Mock Books
 export const mockBooks: Book[] = [
   {
@@ -102,8 +194,8 @@ export const mockBooks: Book[] = [
     authorId: '1',
     author: mockAuthors[0],
     publishYear: 2008,
-    genres: ['Istorinis romanas', 'Lietuvių literatūra', 'Šeimos saga'],
-    mood: BookMood.NEUTRAL,
+    genreId: '1', // Istorinis romanas
+    genre: mockGenres[0],
     coverImageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400',
     averageRating: 4.8,
     reviewCount: 156,
@@ -117,8 +209,8 @@ export const mockBooks: Book[] = [
     authorId: '2',
     author: mockAuthors[1],
     publishYear: 2011,
-    genres: ['Istorinis romanas', 'Jaunimo literatūra', 'Karo drama'],
-    mood: BookMood.SAD,
+    genreId: '5', // Karo drama
+    genre: mockGenres[4],
     coverImageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400',
     averageRating: 4.9,
     reviewCount: 342,
@@ -132,8 +224,8 @@ export const mockBooks: Book[] = [
     authorId: '3',
     author: mockAuthors[2],
     publishYear: 2015,
-    genres: ['Poezija', 'Lietuvių literatūra', 'Filosofinė poezija'],
-    mood: BookMood.NEUTRAL,
+    genreId: '7', // Filosofinė poezija
+    genre: mockGenres[6],
     coverImageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400',
     averageRating: 4.6,
     reviewCount: 89,
@@ -147,8 +239,8 @@ export const mockBooks: Book[] = [
     authorId: '4',
     author: mockAuthors[3],
     publishYear: 1993,
-    genres: ['Šiuolaikinė proza', 'Psichologinis romanas', 'Maginis realizmas'],
-    mood: BookMood.NEUTRAL,
+    genreId: '10', // Maginis realizmas
+    genre: mockGenres[9],
     coverImageUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400',
     averageRating: 4.5,
     reviewCount: 234,
@@ -162,8 +254,8 @@ export const mockBooks: Book[] = [
     authorId: '5',
     author: mockAuthors[4],
     publishYear: 2002,
-    genres: ['Šiuolaikinė proza', 'Socialinė drama', 'Lietuvių literatūra'],
-    mood: BookMood.NEUTRAL,
+    genreId: '11', // Socialinė drama
+    genre: mockGenres[10],
     coverImageUrl: 'https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d?w=400',
     averageRating: 4.3,
     reviewCount: 167,
@@ -177,8 +269,8 @@ export const mockBooks: Book[] = [
     authorId: '1',
     author: mockAuthors[0],
     publishYear: 2011,
-    genres: ['Istorinis romanas', 'Lietuvių literatūra', 'Šeimos saga'],
-    mood: BookMood.NEUTRAL,
+    genreId: '1', // Istorinis romanas
+    genre: mockGenres[0],
     coverImageUrl: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400',
     averageRating: 4.8,
     reviewCount: 142,
@@ -192,8 +284,8 @@ export const mockBooks: Book[] = [
     authorId: '2',
     author: mockAuthors[1],
     publishYear: 2016,
-    genres: ['Istorinis romanas', 'Jaunimo literatūra', 'Karo drama'],
-    mood: BookMood.SAD,
+    genreId: '5', // Karo drama
+    genre: mockGenres[4],
     coverImageUrl: 'https://images.unsplash.com/photo-1491841573634-28140fc7ced7?w=400',
     averageRating: 4.7,
     reviewCount: 298,
@@ -207,8 +299,8 @@ export const mockBooks: Book[] = [
     authorId: '5',
     author: mockAuthors[4],
     publishYear: 2009,
-    genres: ['Šiuolaikinė proza', 'Romantiška drama', 'Lietuvių literatūra'],
-    mood: BookMood.HAPPY,
+    genreId: '12', // Romantiška drama
+    genre: mockGenres[11],
     coverImageUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400',
     averageRating: 4.4,
     reviewCount: 189,
