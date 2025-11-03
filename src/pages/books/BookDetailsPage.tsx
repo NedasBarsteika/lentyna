@@ -1,12 +1,12 @@
 // src/pages/books/BookDetailsPage.tsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import type { Book, Review } from '../../types';
-import axios from 'axios';
-import { mockBooks, mockReviews } from '../../mockData';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import type { Book, Review } from "../../types";
+import axios from "axios";
+import { mockBooks, mockReviews } from "../../mockData";
 
 function BookDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,14 +18,14 @@ function BookDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem("authToken");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
     setIsAuthenticated(!!token);
-    setIsEditor(user.role === 'editor' || user.role === 'admin');
-    setUserId(user.id || '');
+    setIsEditor(user.role === "editor" || user.role === "admin");
+    setUserId(user.id || "");
 
     fetchBookDetails();
     fetchReviews();
@@ -38,21 +38,23 @@ function BookDetailsPage() {
   };
 
   const fetchReviewsFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/reviews/book/${id}`);
+    const response = await axios.get(
+      `https://localhost:7296/api/reviews/book/${id}`,
+    );
     return response.data;
   };
 
   // Mock data fetching - currently used
   const fetchBookDetails = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const foundBook = mockBooks.find(b => b.id === id);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const foundBook = mockBooks.find((b) => b.id === id);
       setBook(foundBook || null);
       if (!foundBook) {
-        setError('Knyga nerasta');
+        setError("Knyga nerasta");
       }
     } catch (err) {
-      setError('Nepavyko užkrauti knygos informacijos');
+      setError("Nepavyko užkrauti knygos informacijos");
       console.error(err);
     } finally {
       setLoading(false);
@@ -61,29 +63,29 @@ function BookDetailsPage() {
 
   const fetchReviews = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const bookReviews = mockReviews.filter(r => r.bookId === id);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const bookReviews = mockReviews.filter((r) => r.bookId === id);
       setReviews(bookReviews);
     } catch (err) {
-      console.error('Failed to fetch reviews', err);
+      console.error("Failed to fetch reviews", err);
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Ar tikrai norite ištrinti šią knygą?')) {
+    if (window.confirm("Ar tikrai norite ištrinti šią knygą?")) {
       try {
         await axios.delete(`https://localhost:7296/api/books/${id}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
         });
-        navigate('/knygos');
+        navigate("/knygos");
       } catch (err) {
-        alert('Nepavyko ištrinti knygos');
+        alert("Nepavyko ištrinti knygos");
       }
     }
   };
-/*
+  /*
   const addToBookshelf = async (status: string) => {
     try {
       await axios.post('https://localhost:7296/api/bookshelf', {
@@ -99,7 +101,6 @@ function BookDetailsPage() {
       alert('Nepavyko pridėti knygos į sąrašą');
     }
   };*/
-
 
   if (loading) {
     return (
@@ -118,7 +119,7 @@ function BookDetailsPage() {
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-          <p className="text-xl text-red-600">{error || 'Knyga nerasta'}</p>
+          <p className="text-xl text-red-600">{error || "Knyga nerasta"}</p>
         </div>
         <Footer />
       </div>
@@ -151,8 +152,9 @@ function BookDetailsPage() {
                   <span className="text-9xl">📚</span>
                 )}
               </div>
-                
-              {/* Add to Bookshelf */}{/* 
+
+              {/* Add to Bookshelf */}
+              {/* 
               {isAuthenticated && (
                 <div className="mt-4">
                   <p className="font-semibold mb-2">Pridėti į sąrašą:</p>
@@ -209,20 +211,26 @@ function BookDetailsPage() {
                 {book.author?.firstName} {book.author?.lastName}
               </Link>
 
-              <p className="text-gray-600 mb-4">Leidimo metai: {book.publishYear}</p>
+              <p className="text-gray-600 mb-4">
+                Leidimo metai: {book.publishYear}
+              </p>
 
               {book.averageRating && (
                 <div className="flex items-center mb-4">
                   <span className="text-yellow-500 text-2xl mr-2">⭐</span>
-                  <span className="text-2xl font-bold">{book.averageRating.toFixed(1)}</span>
-                  <span className="text-gray-600 ml-2">({book.reviewCount} atsiliepimai)</span>
+                  <span className="text-2xl font-bold">
+                    {book.averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-gray-600 ml-2">
+                    ({book.reviewCount} atsiliepimai)
+                  </span>
                 </div>
               )}
 
               <div className="mb-4">
                 <h3 className="font-semibold mb-2">Žanras:</h3>
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-                  {book.genre?.pavadinimas || 'Nežinomas žanras'}
+                  {book.genre?.pavadinimas || "Nežinomas žanras"}
                 </span>
               </div>
 
@@ -244,7 +252,9 @@ function BookDetailsPage() {
 
               <div>
                 <h3 className="font-semibold mb-2">Aprašymas:</h3>
-                <p className="text-gray-700 leading-relaxed">{book.description}</p>
+                <p className="text-gray-700 leading-relaxed">
+                  {book.description}
+                </p>
               </div>
             </div>
           </div>
@@ -271,7 +281,7 @@ function BookDetailsPage() {
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className={`bg-white rounded-lg shadow-md p-6 ${review.isAiGenerated ? 'border-2 border-purple-500' : ''}`}
+                  className={`bg-white rounded-lg shadow-md p-6 ${review.isAiGenerated ? "border-2 border-purple-500" : ""}`}
                 >
                   {review.isAiGenerated && (
                     <div className="mb-2 flex items-center">
@@ -283,15 +293,36 @@ function BookDetailsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <span className="font-semibold mr-2">
-                        {review.user?.username || 'Nežinomas'}
+                        {review.user?.username || "Nežinomas"}
                       </span>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
-                          <span key={i} className={i < review.rating ? 'text-yellow-500' : 'text-gray-300'}>
+                          <span
+                            key={i}
+                            className={
+                              i < review.rating
+                                ? "text-yellow-500"
+                                : "text-gray-300"
+                            }
+                          >
                             ⭐
                           </span>
                         ))}
                       </div>
+
+                      {review.userId === userId && (
+                        <div>
+                          <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            Ištrinti
+                          </button>
+                          <Link
+                            to={`/knygos/${id}/atsiliepimas/redaguoti/${review.id}`}
+                            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                          >
+                            Redaguoti
+                          </Link>
+                        </div>
+                      )}
                     </div>
                     <span className="text-sm text-gray-500">
                       {new Date(review.createdAt).toLocaleDateString()}
