@@ -16,6 +16,8 @@ function BookshelfPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [tempStatus, setTempStatus] = useState<BookshelfStatus | null>(null);
 
   useEffect(() => {
     fetchBookshelf();
@@ -259,17 +261,58 @@ function BookshelfPage() {
                   </Link>
                   <p className="text-gray-600 mb-3">{entry.book?.author?.firstName} {entry.book?.author?.lastName}</p>
 
-                  <div className="mb-3">
-                    <select
-                      value={entry.status}
-                      onChange={(e) => handleStatusChange(entry.id, e.target.value as BookshelfStatus)}
-                      className={`w-full px-3 py-2 rounded-lg font-semibold ${getStatusColor(entry.status)}`}
-                    >
-                      <option value={BookshelfStatus.READ}>Perskaitytos</option>
-                      <option value={BookshelfStatus.READING}>Skaitomos</option>
-                      <option value={BookshelfStatus.WANT_TO_READ}>Norimos skaityti</option>
-                    </select>
-                  </div>
+                <div className="mb-3">
+                  {editingEntryId === entry.id ? (
+                    // --- RODOMA, KAI REDAGUOJAMA ---
+                    <>
+                      <select
+                        value={tempStatus ?? entry.status}
+                        onChange={(e) => setTempStatus(e.target.value as BookshelfStatus)}
+                        className={`w-full px-3 py-2 rounded-lg font-semibold mb-3 ${getStatusColor(tempStatus ?? entry.status)}`}
+                      >
+                        <option value={BookshelfStatus.READ}>Perskaitytos</option>
+                        <option value={BookshelfStatus.READING}>Skaitomos</option>
+                        <option value={BookshelfStatus.WANT_TO_READ}>Norimos skaityti</option>
+                      </select>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // čia gali likti tik vizualus efektas arba logika
+                            setEditingEntryId(null);
+                          }}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Išsaugoti
+                        </button>
+                        <button
+                          onClick={() => setEditingEntryId(null)}
+                          className="flex-1 px-3 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+                        >
+                          Atšaukti
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    // --- RODOMA IŠ PRADŽIŲ ---
+                    <>
+                      <div
+                        className={`w-full text-center px-3 py-2 rounded-lg font-semibold mb-3 ${getStatusColor(entry.status)}`}
+                      >
+                        {getStatusText(entry.status)}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingEntryId(entry.id);
+                          setTempStatus(entry.status);
+                        }}
+                        className="w-full px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                      >
+                        Redaguoti
+                      </button>
+                    </>
+                  )}
+                </div>
 
                   <button
                     onClick={() => handleRemove(entry.id)}
