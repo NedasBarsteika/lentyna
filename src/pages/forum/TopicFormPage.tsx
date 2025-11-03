@@ -117,7 +117,9 @@ function TopicFormPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/forumas")}
+              onClick={() =>
+                navigate(isEditMode ? `/forumas/tema/${id}` : "/forumas")
+              }
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
               Atšaukti

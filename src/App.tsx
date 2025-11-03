@@ -48,6 +48,10 @@ function App() {
           path="/knygos/:bookId/atsiliepimas"
           element={<ReviewFormPage />}
         />
+        <Route
+          path="/knygos/:bookId/atsiliepimas/redaguoti/:reviewId"
+          element={<ReviewFormPage />}
+        />
 
         {/* Authors */}
         <Route path="/autoriai" element={<AuthorsPage />} />

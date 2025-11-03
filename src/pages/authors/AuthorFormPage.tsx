@@ -1,11 +1,11 @@
 // src/pages/authors/AuthorFormPage.tsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import ImageUpload from '../../components/ImageUpload';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import ImageUpload from "../../components/ImageUpload";
+import axios from "axios";
 
 function AuthorFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -13,13 +13,13 @@ function AuthorFormPage() {
   const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    biography: ''
+    firstName: "",
+    lastName: "",
+    biography: "",
   });
 
   const [photo, setPhoto] = useState<File | null>(null);
-  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>('');
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,20 +31,24 @@ function AuthorFormPage() {
 
   const fetchAuthor = async () => {
     try {
-      const response = await axios.get(`https://localhost:7296/api/authors/${id}`);
+      const response = await axios.get(
+        `https://localhost:7296/api/authors/${id}`,
+      );
       const author = response.data;
       setFormData({
         firstName: author.firstName,
         lastName: author.lastName,
-        biography: author.biography
+        biography: author.biography,
       });
-      setCurrentPhotoUrl(author.photoUrl || '');
+      setCurrentPhotoUrl(author.photoUrl || "");
     } catch (err) {
-      setError('Nepavyko užkrauti autoriaus informacijos');
+      setError("Nepavyko užkrauti autoriaus informacijos");
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -53,44 +57,52 @@ function AuthorFormPage() {
     setError(null);
 
     if (!formData.firstName || !formData.lastName || !formData.biography) {
-      setError('Užpildykite visus privalomus laukus');
+      setError("Užpildykite visus privalomus laukus");
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
 
       // Create FormData for multipart upload
       const submitData = new FormData();
-      submitData.append('firstName', formData.firstName);
-      submitData.append('lastName', formData.lastName);
-      submitData.append('biography', formData.biography);
+      submitData.append("firstName", formData.firstName);
+      submitData.append("lastName", formData.lastName);
+      submitData.append("biography", formData.biography);
 
       // Append photo file if a new one was uploaded
       if (photo) {
-        submitData.append('photo', photo);
+        submitData.append("photo", photo);
       }
 
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+          "Content-Type": "multipart/form-data",
+        },
       };
 
       if (isEditMode) {
-        await axios.put(`https://localhost:7296/api/authors/${id}`, submitData, config);
-        alert('Autorius sėkmingai atnaujintas!');
+        await axios.put(
+          `https://localhost:7296/api/authors/${id}`,
+          submitData,
+          config,
+        );
+        alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
-        const response = await axios.post('https://localhost:7296/api/authors', submitData, config);
-        alert('Autorius sėkmingai sukurtas!');
+        const response = await axios.post(
+          "https://localhost:7296/api/authors",
+          submitData,
+          config,
+        );
+        alert("Autorius sėkmingai sukurtas!");
         navigate(`/autoriai/${response.data.id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data || 'Nepavyko išsaugoti autoriaus');
+      setError(err.response?.data || "Nepavyko išsaugoti autoriaus");
     } finally {
       setLoading(false);
     }
@@ -108,7 +120,7 @@ function AuthorFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? 'Redaguoti autorių' : 'Pridėti naują autorių'}
+          {isEditMode ? "Redaguoti autorių" : "Pridėti naują autorių"}
         </h1>
 
         {error && (
@@ -117,7 +129,10 @@ function AuthorFormPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-lg p-6 space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block font-semibold mb-2">Vardas *</label>
@@ -171,11 +186,13 @@ function AuthorFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? 'Saugoma...' : isEditMode ? 'Atnaujinti' : 'Sukurti'}
+              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Sukurti"}
             </button>
             <button
               type="button"
-              onClick={() => navigate('/autoriai')}
+              onClick={() =>
+                navigate(isEditMode ? `/autoriai/${id}` : "/autoriai")
+              }
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
               Atšaukti

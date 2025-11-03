@@ -1,21 +1,23 @@
 // src/pages/reviews/ReviewFormPage.tsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import type { Book } from '../../types';
-import axios from 'axios';
-import { mockBooks } from '../../mockData';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import type { Book } from "../../types";
+import axios from "axios";
+import { mockBooks } from "../../mockData";
 
 function ReviewFormPage() {
   const { bookId } = useParams<{ bookId: string }>();
+  const { reviewId } = useParams<{ reviewId?: string }>();
+  const isEditMode = !!reviewId;
   const navigate = useNavigate();
 
   const [book, setBook] = useState<Book | null>(null);
   const [formData, setFormData] = useState({
-    text: '',
-    rating: 5
+    text: "",
+    rating: 5,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,24 +28,31 @@ function ReviewFormPage() {
 
   // Real API call - for future use
   const fetchBookFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/books/${bookId}`);
+    const response = await axios.get(
+      `https://localhost:7296/api/books/${bookId}`,
+    );
     return response.data;
   };
 
   // Mock data fetching - currently used
   const fetchBook = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const foundBook = mockBooks.find(b => b.id === bookId);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const foundBook = mockBooks.find((b) => b.id === bookId);
       setBook(foundBook || null);
     } catch (err) {
-      setError('Nepavyko užkrauti knygos informacijos');
+      setError("Nepavyko užkrauti knygos informacijos");
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: name === 'rating' ? parseInt(value) : value });
+    setFormData({
+      ...formData,
+      [name]: name === "rating" ? parseInt(value) : value,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,28 +60,32 @@ function ReviewFormPage() {
     setError(null);
 
     if (!formData.text.trim()) {
-      setError('Parašykite atsiliepimą');
+      setError("Parašykite atsiliepimą");
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken');
-      await axios.post('https://localhost:7296/api/reviews', {
-        bookId,
-        text: formData.text,
-        rating: formData.rating
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const token = localStorage.getItem("authToken");
+      await axios.post(
+        "https://localhost:7296/api/reviews",
+        {
+          bookId,
+          text: formData.text,
+          rating: formData.rating,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
-      alert('Atsiliepimas sėkmingai paskelbtas!');
+      alert("Atsiliepimas sėkmingai paskelbtas!");
       navigate(`/knygos/${bookId}`);
     } catch (err: any) {
-      setError(err.response?.data || 'Nepavyko paskelbti atsiliepimo');
+      setError(err.response?.data || "Nepavyko paskelbti atsiliepimo");
     } finally {
       setLoading(false);
     }
@@ -89,9 +102,13 @@ function ReviewFormPage() {
         transition={{ duration: 0.5 }}
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
-        <h1 className="text-4xl font-bold mb-2">Rašyti atsiliepimą</h1>
+        <h1 className="text-4xl font-bold mb-2">
+          {isEditMode ? "Redaguoti komentarą" : "Rašyti atsiliepimą"}
+        </h1>
         {book && (
-          <p className="text-xl text-gray-600 mb-6">Apie knygą: <span className="font-semibold">{book.title}</span></p>
+          <p className="text-xl text-gray-600 mb-6">
+            Apie knygą: <span className="font-semibold">{book.title}</span>
+          </p>
         )}
 
         {error && (
@@ -100,7 +117,10 @@ function ReviewFormPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-lg p-6 space-y-6"
+        >
           <div>
             <label className="block font-semibold mb-2">Įvertinimas *</label>
             <div className="flex items-center gap-4">
@@ -117,7 +137,7 @@ function ReviewFormPage() {
                 {[...Array(5)].map((_, i) => (
                   <span
                     key={i}
-                    className={`text-3xl ${i < formData.rating ? 'text-yellow-500' : 'text-gray-300'}`}
+                    className={`text-3xl ${i < formData.rating ? "text-yellow-500" : "text-gray-300"}`}
                   >
                     ⭐
                   </span>
@@ -128,7 +148,9 @@ function ReviewFormPage() {
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Jūsų atsiliepimas *</label>
+            <label className="block font-semibold mb-2">
+              Jūsų atsiliepimas *
+            </label>
             <textarea
               name="text"
               value={formData.text}
@@ -149,7 +171,7 @@ function ReviewFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? 'Skelbiama...' : 'Paskelbti atsiliepimą'}
+              {loading ? "Skelbiama..." : "Paskelbti atsiliepimą"}
             </button>
             <button
               type="button"

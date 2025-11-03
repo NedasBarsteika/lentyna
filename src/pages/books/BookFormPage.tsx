@@ -1,13 +1,13 @@
 // src/pages/books/BookFormPage.tsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import Navbar from '../../components/Navbar';
-import Footer from '../../components/Footer';
-import ImageUpload from '../../components/ImageUpload';
-import type { Author, Genre } from '../../types';
-import axios from 'axios';
-import { mockAuthors, mockBooks, mockGenres } from '../../mockData';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import ImageUpload from "../../components/ImageUpload";
+import type { Author, Genre } from "../../types";
+import axios from "axios";
+import { mockAuthors, mockBooks, mockGenres } from "../../mockData";
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -23,15 +23,15 @@ function BookFormPage() {
     publishYear: number;
     genreId: string;
   }>({
-    title: '',
-    description: '',
-    authorId: '',
+    title: "",
+    description: "",
+    authorId: "",
     publishYear: new Date().getFullYear(),
-    genreId: ''
+    genreId: "",
   });
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState<string>('');
+  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +45,7 @@ function BookFormPage() {
 
   // Real API calls - for future use
   const fetchAuthorsFromAPI = async () => {
-    const response = await axios.get('https://localhost:7296/api/authors');
+    const response = await axios.get("https://localhost:7296/api/authors");
     return response.data;
   };
 
@@ -57,42 +57,46 @@ function BookFormPage() {
   // Mock data fetching - currently used
   const fetchAuthors = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       setAuthors(mockAuthors);
     } catch (err) {
-      console.error('Failed to fetch authors', err);
+      console.error("Failed to fetch authors", err);
     }
   };
 
   const fetchGenres = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       setGenres(mockGenres);
     } catch (err) {
-      console.error('Failed to fetch genres', err);
+      console.error("Failed to fetch genres", err);
     }
   };
 
   const fetchBook = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const book = mockBooks.find(b => b.id === id);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const book = mockBooks.find((b) => b.id === id);
       if (book) {
         setFormData({
           title: book.title,
           description: book.description,
           authorId: book.authorId,
           publishYear: book.publishYear,
-          genreId: book.genreId
+          genreId: book.genreId,
         });
-        setCurrentCoverImageUrl(book.coverImageUrl || '');
+        setCurrentCoverImageUrl(book.coverImageUrl || "");
       }
     } catch (err) {
-      setError('Nepavyko užkrauti knygos informacijos');
+      setError("Nepavyko užkrauti knygos informacijos");
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -101,46 +105,59 @@ function BookFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.title || !formData.description || !formData.authorId || !formData.genreId) {
-      setError('Užpildykite visus privalomus laukus');
+    if (
+      !formData.title ||
+      !formData.description ||
+      !formData.authorId ||
+      !formData.genreId
+    ) {
+      setError("Užpildykite visus privalomus laukus");
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
 
       // Create FormData for multipart upload
       const submitData = new FormData();
-      submitData.append('title', formData.title);
-      submitData.append('description', formData.description);
-      submitData.append('authorId', formData.authorId);
-      submitData.append('publishYear', formData.publishYear.toString());
-      submitData.append('genreId', formData.genreId);
+      submitData.append("title", formData.title);
+      submitData.append("description", formData.description);
+      submitData.append("authorId", formData.authorId);
+      submitData.append("publishYear", formData.publishYear.toString());
+      submitData.append("genreId", formData.genreId);
 
       // Append cover image file if a new one was uploaded
       if (coverImage) {
-        submitData.append('coverImage', coverImage);
+        submitData.append("coverImage", coverImage);
       }
 
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+          "Content-Type": "multipart/form-data",
+        },
       };
 
       if (isEditMode) {
-        await axios.put(`https://localhost:7296/api/books/${id}`, submitData, config);
-        alert('Knyga sėkmingai atnaujinta!');
+        await axios.put(
+          `https://localhost:7296/api/books/${id}`,
+          submitData,
+          config,
+        );
+        alert("Knyga sėkmingai atnaujinta!");
       } else {
-        const response = await axios.post('https://localhost:7296/api/books', submitData, config);
-        alert('Knyga sėkmingai sukurta!');
+        const response = await axios.post(
+          "https://localhost:7296/api/books",
+          submitData,
+          config,
+        );
+        alert("Knyga sėkmingai sukurta!");
         navigate(`/knygos/${response.data.id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data || 'Nepavyko išsaugoti knygos');
+      setError(err.response?.data || "Nepavyko išsaugoti knygos");
     } finally {
       setLoading(false);
     }
@@ -158,7 +175,7 @@ function BookFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? 'Redaguoti knygą' : 'Pridėti naują knygą'}
+          {isEditMode ? "Redaguoti knygą" : "Pridėti naują knygą"}
         </h1>
 
         {error && (
@@ -167,7 +184,10 @@ function BookFormPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-lg p-6 space-y-6"
+        >
           <div>
             <label className="block font-semibold mb-2">Pavadinimas *</label>
             <input
@@ -242,7 +262,11 @@ function BookFormPage() {
             </select>
             {formData.genreId && (
               <p className="mt-2 text-sm text-gray-600">
-                Nuotaikos: {genres.find(g => g.id === formData.genreId)?.moods?.map(m => m.pavadinimas).join(', ')}
+                Nuotaikos:{" "}
+                {genres
+                  .find((g) => g.id === formData.genreId)
+                  ?.moods?.map((m) => m.pavadinimas)
+                  .join(", ")}
               </p>
             )}
           </div>
@@ -261,11 +285,11 @@ function BookFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? 'Saugoma...' : isEditMode ? 'Atnaujinti' : 'Sukurti'}
+              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Sukurti"}
             </button>
             <button
               type="button"
-              onClick={() => navigate('/knygos')}
+              onClick={() => navigate(isEditMode ? `/knygos/${id}` : "/knygos")}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
               Atšaukti
