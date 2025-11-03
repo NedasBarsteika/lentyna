@@ -15,6 +15,7 @@ function BookshelfPage() {
   const [activeTab, setActiveTab] = useState<'all' | BookshelfStatus>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchBookshelf();
@@ -205,6 +206,16 @@ function BookshelfPage() {
             Norimos ({countByStatus(BookshelfStatus.WANT_TO_READ)})
           </button>
         </div>
+        
+        {/* Add Book Button */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+          >
+            + Pridėti knygą
+          </button>
+        </div>
 
         {/* Books Grid */}
         {loading ? (
@@ -305,6 +316,57 @@ function BookshelfPage() {
           </div>
         )}
       </motion.div>
+
+ {/* Add Book Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-5 text-center">Pridėti naują knygą</h2>
+
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Būsena</label>
+              <select className="w-full border rounded-lg px-3 py-2">
+                <option>Perskaityta</option>
+                <option>Skaitoma</option>
+                <option>Norima skaityti</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block mb-1 font-semibold">Pavadinimas</label>
+              <input
+                type="text"
+                placeholder="Įveskite pavadinimą"
+                className="w-full border rounded-lg px-3 py-2"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block mb-1 font-semibold">Autorius</label>
+              <input
+                type="text"
+                placeholder="Įveskite autoriaus vardą ir pavardę"
+                className="w-full border rounded-lg px-3 py-2"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+              >
+                Atšaukti
+              </button>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Išsaugoti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

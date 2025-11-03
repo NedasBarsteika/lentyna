@@ -84,7 +84,7 @@ function BookDetailsPage() {
       }
     }
   };
-
+/*
   const addToBookshelf = async (status: string) => {
     try {
       await axios.post('https://localhost:7296/api/bookshelf', {
@@ -99,7 +99,7 @@ function BookDetailsPage() {
     } catch (err) {
       alert('Nepavyko pridėti knygos į sąrašą');
     }
-  };
+  };*/
 
   const getMoodText = (mood: BookMood) => {
     switch (mood) {
@@ -164,8 +164,8 @@ function BookDetailsPage() {
                   <span className="text-9xl">📚</span>
                 )}
               </div>
-
-              {/* Add to Bookshelf */}
+                
+              {/* Add to Bookshelf */}{/* 
               {isAuthenticated && (
                 <div className="mt-4">
                   <p className="font-semibold mb-2">Pridėti į sąrašą:</p>
@@ -190,7 +190,7 @@ function BookDetailsPage() {
                     </button>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Book Details */}
