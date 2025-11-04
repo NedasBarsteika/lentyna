@@ -222,7 +222,7 @@ function BookDetailsPage() {
                     {book.averageRating.toFixed(1)}
                   </span>
                   <span className="text-gray-600 ml-2">
-                    ({book.reviewCount} atsiliepimai)
+                    ({book.reviewCount} komentarai)
                   </span>
                 </div>
               )}
@@ -260,10 +260,10 @@ function BookDetailsPage() {
           </div>
         </div>
 
-        {/* Reviews Section */}
+        {/* Comment Section */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-3xl font-bold">Atsiliepimai</h2>
+            <h2 className="text-3xl font-bold">Komentarai</h2>
             {isAuthenticated && (
               <Link
                 to={`/knygos/${id}/atsiliepimas`}

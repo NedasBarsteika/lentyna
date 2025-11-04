@@ -175,7 +175,7 @@ function BookFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? "Redaguoti knygą" : "Pridėti naują knygą"}
+          {isEditMode ? "Knygos redagavimo langas" : "Knygos pridėjimo langas"}
         </h1>
 
         {error && (

@@ -344,7 +344,7 @@ export const mockReviews: Review[] = [
     id: 'ai-1',
     bookId: '1',
     userId: '0',
-    text: 'Remiantis skaitytojų atsiliepimais, "Silva rerum I" yra puikiai parašytas istorinis romanas, pasižymintis kruopščiu istoriniu tikslumu ir įtraukiančiu pasakojimu. Daugelis skaitytojų ypač vertina detalų XVII amžiaus Lietuvos gyvenimo aprašymą ir personažų charakterių gilumą. Rekomenduojama istorinės literatūros mylėtojams.',
+    text: 'Remiantis skaitytojų komentarais, "Silva rerum I" yra puikiai parašytas istorinis romanas, pasižymintis kruopščiu istoriniu tikslumu ir įtraukiančiu pasakojimu. Daugelis skaitytojų ypač vertina detalų XVII amžiaus Lietuvos gyvenimo aprašymą ir personažų charakterių gilumą. Rekomenduojama istorinės literatūros mylėtojams.',
     rating: 5,
     isAiGenerated: true,
     createdAt: new Date('2025-10-25'),

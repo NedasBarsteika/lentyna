@@ -348,7 +348,7 @@ function BooksPage() {
                     <div className="flex items-center">
                       <span className="text-yellow-500 mr-1">⭐</span>
                       <span className="font-semibold">{book.averageRating.toFixed(1)}</span>
-                      <span className="text-gray-500 text-sm ml-2">({book.reviewCount} atsiliepimai)</span>
+                      <span className="text-gray-500 text-sm ml-2">({book.reviewCount} komentarai)</span>
                     </div>
                   )}
                 </div>

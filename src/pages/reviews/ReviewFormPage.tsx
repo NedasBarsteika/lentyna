@@ -103,7 +103,7 @@ function ReviewFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-2">
-          {isEditMode ? "Redaguoti komentarą" : "Rašyti atsiliepimą"}
+          {isEditMode ? "Komentaro redagavimo langas" : "Komentaro sukūrimo langas"}
         </h1>
         {book && (
           <p className="text-xl text-gray-600 mb-6">

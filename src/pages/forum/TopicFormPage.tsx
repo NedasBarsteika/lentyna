@@ -68,7 +68,7 @@ function TopicFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? "Redaguoti temą" : "Sukurti naują temą"}
+          {isEditMode ? "Temos redagavimo langas" : "Temos sukūrimo langas"}
         </h1>
 
         {error && (
@@ -113,7 +113,7 @@ function TopicFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {isEditMode ? "Redaguoti temą" : "Sukurti temą"}
+              {isEditMode ? "Temos redagavimo langas" : "Temos sukūrimo langas"}
             </button>
             <button
               type="button"

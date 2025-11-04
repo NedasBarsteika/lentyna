@@ -120,7 +120,7 @@ function AuthorFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? "Redaguoti autorių" : "Pridėti naują autorių"}
+          {isEditMode ? "Autoriaus redagavimo langas" : "Autoriaus pridėjimo langas"}
         </h1>
 
         {error && (

@@ -559,7 +559,7 @@ function AdminPage() {
 
       {/* Reviews Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Naujausi Atsiliepimai ({reviews.length})</h3>
+        <h3 className="text-xl font-semibold mb-4">Naujausi Komentarai ({reviews.length})</h3>
         <div className="space-y-2">
           {reviews.slice(0, 5).map((review) => (
             <div key={review.id} className="flex justify-between items-start p-3 border rounded hover:bg-gray-50">

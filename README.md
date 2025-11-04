@@ -160,8 +160,8 @@ Sistema naudoja JWT tokenus, kurie saugomi `localStorage`:
 - `PUT /api/authors/:id` - Atnaujinti autorių (Redaktorius)
 - `DELETE /api/authors/:id` - Ištrinti autorių (Redaktorius)
 
-### Atsiliepimai
-- `GET /api/reviews/book/:bookId` - Knygos atsiliepimai
+### Komentarai
+- `GET /api/comments/book/:bookId` - Knygos komentarai
 - `POST /api/reviews` - Sukurti atsiliepimą
 - `DELETE /api/reviews/:id` - Ištrinti atsiliepimą
 
