@@ -5,54 +5,41 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { ForumTopic, ForumComment } from "../../types";
-import axios from "axios";
-import { mockForumTopics, mockForumComments } from "../../mockData";
+import { forumService } from "../../api";
+import { UserRole } from "../../types";
 
 function TopicDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [topic, setTopic] = useState<ForumTopic | null>(null);
+  const [comments, setComments] = useState<ForumComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [userId, setUserId] = useState<string>("");
 
+  const [newComment, setNewComment] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     setIsAuthenticated(!!token);
-    setIsModerator(user.role === "moderator" || user.role === "admin");
-    setUserId(user.id || "");
+    setIsModerator(user.role === UserRole.MODERATOR || user.role === UserRole.ADMIN);
+    setUserId(user.Id || "");
 
-    fetchTopic();
+    if (id) {
+      fetchTopic();
+      fetchComments();
+    }
   }, [id]);
 
-  // Real API calls - for future use
-  const fetchTopicFromAPI = async () => {
-    const response = await axios.get(
-      `https://localhost:7296/api/forum/topics/${id}`,
-    );
-    return response.data;
-  };
-
-  const fetchCommentsFromAPI = async () => {
-    const response = await axios.get(
-      `https://localhost:7296/api/forum/topics/${id}/comments`,
-    );
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
   const fetchTopic = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const foundTopic = mockForumTopics.find((t) => t.id === id);
-      setTopic(foundTopic || null);
-      if (!foundTopic) {
-        setError("Tema nerasta");
-      }
+      const data = await forumService.getTopicById(id!);
+      setTopic(data);
     } catch (err) {
       setError("Nepavyko užkrauti temos");
       console.error(err);
@@ -61,19 +48,42 @@ function TopicDetailsPage() {
     }
   };
 
+  const fetchComments = async () => {
+    try {
+      const data = await forumService.getTopicComments(id!);
+      setComments(data);
+    } catch (err) {
+      console.error("Failed to fetch comments", err);
+    }
+  };
+
   const handleDeleteTopic = async () => {
     if (window.confirm("Ar tikrai norite ištrinti šią temą?")) {
       try {
-        const token = localStorage.getItem("authToken");
-        await axios.delete(`https://localhost:7296/api/forum/topics/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await forumService.deleteTopic(id!);
         navigate("/forumas");
       } catch (err) {
         alert("Nepavyko ištrinti temos");
       }
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const response = await forumService.addComment(id!, {
+        komentaro_tekstas: newComment,
+        vertinimas: 5,
+      });
+      setComments([...comments, response]);
+      setNewComment("");
+    } catch (err) {
+      alert("Nepavyko pridėti komentaro");
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -114,46 +124,123 @@ function TopicDetailsPage() {
       >
         {/* Topic */}
         <div
-          className={`bg-white rounded-lg shadow-lg p-6 mb-6 ${topic.isPinned ? "border-l-4 border-yellow-500" : ""}`}
+          className={`bg-white rounded-lg shadow-lg p-6 mb-6 ${topic.prikabinta ? "border-l-4 border-yellow-500" : ""}`}
         >
           <div className="flex justify-between items-start mb-4">
             <div className="flex-grow">
-              {topic.isPinned && (
+              {topic.prikabinta && (
                 <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold mb-2">
-                  📌 Prikabinta
+                  Prikabinta
                 </span>
               )}
-              <h1 className="text-4xl font-bold mb-2">{topic.title}</h1>
+              <h1 className="text-4xl font-bold mb-2">{topic.pavadinimas}</h1>
               <div className="flex items-center text-gray-600">
-                <span className="mr-4">
-                  👤 {topic.author?.username || "Nežinomas"}
-                </span>
+                <div className="flex items-center gap-2 mr-4">
+                  {topic.autorius_nuotrauka ? (
+                    <img
+                      src={topic.autorius_nuotrauka}
+                      alt={topic.autorius_slapyvardis}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">
+                        {(topic.autorius_slapyvardis || "?").charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span>{topic.autorius_slapyvardis || "Nežinomas"}</span>
+                </div>
                 <span>
-                  {new Date(topic.createdAt).toLocaleDateString("lt-LT")}
+                  {new Date(topic.sukurimo_data).toLocaleDateString("lt-LT")}
                 </span>
               </div>
             </div>
-            {(isModerator || topic.authorId === userId) && (
-              <div>
+            {(isModerator || topic.NaudotojasId === userId) && (
+              <div className="flex gap-2">
+                {topic.NaudotojasId === userId && (
+                  <Link
+                    to={`/forumas/tema/${id}/redaguoti`}
+                    className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                  >
+                    Redaguoti
+                  </Link>
+                )}
                 <button
                   onClick={handleDeleteTopic}
                   className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                 >
                   Ištrinti
                 </button>
-                <Link
-                  to={`/forumas/tema/${id}/redaguoti`}
-                  className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
-                >
-                  Redaguoti
-                </Link>
               </div>
             )}
           </div>
           <p className="text-gray-700 text-lg whitespace-pre-line">
-            {topic.description}
+            {topic.tekstas}
           </p>
         </div>
+
+        {/* Comments */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-4">Komentarai ({comments.length})</h2>
+
+          {comments.length === 0 ? (
+            <p className="text-gray-600">Komentarų dar nėra</p>
+          ) : (
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div key={comment.Id} className="bg-white rounded-lg shadow-md p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {comment.naudotojo_nuotrauka ? (
+                        <img
+                          src={comment.naudotojo_nuotrauka}
+                          alt={comment.naudotojo_slapyvardis}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-sm text-gray-500">
+                            {(comment.naudotojo_slapyvardis || "?").charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span className="font-semibold">
+                        {comment.naudotojo_slapyvardis || "Nežinomas"}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(comment.komentaro_data).toLocaleDateString("lt-LT")}
+                    </span>
+                  </div>
+                  <p className="text-gray-700">{comment.komentaro_tekstas}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add Comment Form */}
+        {isAuthenticated && (
+          <form onSubmit={handleSubmitComment} className="bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-xl font-bold mb-4">Pridėti komentarą</h3>
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-2 border rounded-lg mb-4"
+              placeholder="Parašykite komentarą..."
+              required
+            />
+            <button
+              type="submit"
+              disabled={submittingComment}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+            >
+              {submittingComment ? "Siunčiama..." : "Komentuoti"}
+            </button>
+          </form>
+        )}
       </motion.div>
 
       <Footer />

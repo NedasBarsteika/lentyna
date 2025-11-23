@@ -4,21 +4,20 @@ import "../App.css";
 import NavbarOnlyLogo from "../components/NavbarOnlyLogo";
 import Footer from "../components/Footer";
 import { useState } from "react";
-import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
-import { mockLogin } from "../mockData";
+import { authService } from "../api";
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [formData, setFormData] = useState({
-    usernameOrEmail: "",
-    password: "",
+    el_pastas: "",
+    slaptazodis: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,40 +27,34 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.usernameOrEmail || !formData.password) {
+    if (!formData.el_pastas || !formData.slaptazodis) {
       setError("Įveskite prisijungimo duomenis");
       return;
     }
 
     setLoading(true);
 
-    // Try backend first, fallback to mock data
     try {
-      const response = await axios.post("https://localhost:7296/user/login", {
-        usernameOrEmail: formData.usernameOrEmail,
-        password: formData.password,
+      const response = await authService.login({
+        el_pastas: formData.el_pastas,
+        slaptazodis: formData.slaptazodis,
       });
 
-      if (response.status === 200) {
-        const token = response.data.token;
-        const user = response.data.user;
-        localStorage.setItem("authToken", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
-        const previousPage = location.state?.from || "/";
-        navigate(previousPage, { replace: true });
-      }
-    } catch (error: any) {
-      // If backend is not available, use mock login
-      console.log("Backend nepasiekiamas, naudojami mock duomenys");
-      const result = mockLogin(formData.usernameOrEmail, formData.password);
-
-      if (result.success) {
-        document.cookie = `token=${result.token}; path=/; max-age=3600; Secure; SameSite=Strict`;
-        const previousPage = location.state?.from || "/";
-        navigate(previousPage, { replace: true });
+      const token = response.token;
+      const user = response.naudotojas;
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
+      const previousPage = location.state?.from || "/";
+      navigate(previousPage, { replace: true });
+    } catch (err: any) {
+      console.error("Prisijungimo klaida:", err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError("Neteisingas el. paštas arba slaptažodis");
       } else {
-        setError(result.error);
+        setError("Įvyko klaida prisijungiant. Bandykite dar kartą.");
       }
     }
 
@@ -91,19 +84,19 @@ function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
-                type="text"
-                name="usernameOrEmail"
-                placeholder="Slapyvardis arba el. paštas"
-                value={formData.usernameOrEmail}
+                type="email"
+                name="el_pastas"
+                placeholder="El. paštas"
+                value={formData.el_pastas}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
                 type="password"
-                name="password"
+                name="slaptazodis"
                 placeholder="Slaptažodis"
-                value={formData.password}
+                value={formData.slaptazodis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required

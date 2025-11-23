@@ -6,20 +6,11 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { BookshelfEntry, BookRecommendation, Book } from "../../types";
 import { BookshelfStatus } from "../../types";
-import axios from "axios";
-import {
-  mockBookshelfEntries,
-  mockRecommendations,
-  mockBooks,
-} from "../../mockData";
+import { bookshelfService, booksService } from "../../api";
 
 function BookshelfPage() {
-  const [bookshelfEntries, setBookshelfEntries] = useState<BookshelfEntry[]>(
-    []
-  );
-  const [recommendations, setRecommendations] = useState<BookRecommendation[]>(
-    []
-  );
+  const [bookshelfEntries, setBookshelfEntries] = useState<BookshelfEntry[]>([]);
+  const [recommendations, setRecommendations] = useState<BookRecommendation[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | BookshelfStatus>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +18,6 @@ function BookshelfPage() {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [tempStatus, setTempStatus] = useState<BookshelfStatus | null>(null);
 
-  // New state for book selection
   const [availableBooks, setAvailableBooks] = useState<Book[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,43 +29,17 @@ function BookshelfPage() {
     fetchRecommendations();
   }, []);
 
-  // Fetch available books when modal opens
   useEffect(() => {
     if (showAddModal) {
       fetchAvailableBooks();
     }
   }, [showAddModal, bookshelfEntries]);
 
-  // Real API calls - for future use
-  const fetchBookshelfFromAPI = async () => {
-    const token = localStorage.getItem("authToken");
-    const response = await axios.get("https://localhost:7296/api/bookshelf", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  };
-
-  const fetchRecommendationsFromAPI = async () => {
-    const token = localStorage.getItem("authToken");
-    const response = await axios.get(
-      "https://localhost:7296/api/recommendations",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
   const fetchBookshelf = async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setBookshelfEntries(mockBookshelfEntries);
+      const data = await bookshelfService.getAll();
+      setBookshelfEntries(data);
     } catch (err: any) {
       setError("Nepavyko užkrauti knygų sąrašo");
       console.error(err);
@@ -86,8 +50,8 @@ function BookshelfPage() {
 
   const fetchRecommendations = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      setRecommendations(mockRecommendations);
+      const data = await bookshelfService.getRecommendations();
+      setRecommendations(data);
     } catch (err) {
       console.error("Failed to fetch recommendations", err);
     }
@@ -97,14 +61,11 @@ function BookshelfPage() {
     setLoadingBooks(true);
     setSaveError(null);
     try {
-      // Get IDs of books already in bookshelf
-      const bookshelfBookIds = bookshelfEntries.map((entry) => entry.bookId);
-
-      // Filter out books already in bookshelf
-      const filteredBooks = mockBooks.filter(
-        (book) => !bookshelfBookIds.includes(book.id)
+      const bookshelfBookIds = bookshelfEntries.map((entry) => entry.KnygaId);
+      const response = await booksService.getAll({ pageSize: 100 });
+      const filteredBooks = response.items.filter(
+        (book) => !bookshelfBookIds.includes(book.Id)
       );
-
       setAvailableBooks(filteredBooks);
     } catch (err) {
       console.error("Failed to fetch books", err);
@@ -117,14 +78,9 @@ function BookshelfPage() {
   const handleRemove = async (entryId: string) => {
     if (window.confirm("Ar tikrai norite pašalinti šią knygą iš sąrašo?")) {
       try {
-        const token = localStorage.getItem("authToken");
-        await axios.delete(`https://localhost:7296/api/bookshelf/${entryId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await bookshelfService.delete(entryId);
         setBookshelfEntries(
-          bookshelfEntries.filter((entry) => entry.id !== entryId)
+          bookshelfEntries.filter((entry) => entry.Id !== entryId)
         );
         alert("Knyga pašalinta iš sąrašo");
       } catch (err) {
@@ -138,21 +94,10 @@ function BookshelfPage() {
     newStatus: BookshelfStatus
   ) => {
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.put(
-        `https://localhost:7296/api/bookshelf/${entryId}`,
-        {
-          status: newStatus,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await bookshelfService.update(entryId, { tipas: newStatus });
       setBookshelfEntries(
         bookshelfEntries.map((entry) =>
-          entry.id === entryId ? { ...entry, status: newStatus } : entry
+          entry.Id === entryId ? { ...entry, tipas: newStatus } : entry
         )
       );
     } catch (err) {
@@ -170,37 +115,22 @@ function BookshelfPage() {
     setLoadingBooks(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        "https://localhost:7296/api/bookshelf",
-        {
-          bookId: selectedBookId,
-          status: BookshelfStatus.WANT_TO_READ,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await bookshelfService.create({
+        KnygaId: selectedBookId,
+        tipas: BookshelfStatus.WANT_TO_READ,
+      });
 
-      // Add the new entry to bookshelf
       const selectedBook = availableBooks.find(
-        (book) => book.id === selectedBookId
+        (book) => book.Id === selectedBookId
       );
       if (selectedBook) {
         const newEntry: BookshelfEntry = {
-          id: response.data.id || `temp-${Date.now()}`,
-          userId: response.data.userId || "1",
-          bookId: selectedBookId,
-          book: selectedBook,
-          status: BookshelfStatus.WANT_TO_READ,
-          addedAt: new Date(),
+          ...response,
+          Knyga: selectedBook,
         };
         setBookshelfEntries([...bookshelfEntries, newEntry]);
       }
 
-      // Close modal and reset state
       setShowAddModal(false);
       setSelectedBookId(null);
       setSearchQuery("");
@@ -247,10 +177,10 @@ function BookshelfPage() {
   const filteredEntries =
     activeTab === "all"
       ? bookshelfEntries
-      : bookshelfEntries.filter((entry) => entry.status === activeTab);
+      : bookshelfEntries.filter((entry) => entry.tipas === activeTab);
 
   const countByStatus = (status: BookshelfStatus) =>
-    bookshelfEntries.filter((entry) => entry.status === status).length;
+    bookshelfEntries.filter((entry) => entry.tipas === status).length;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -370,15 +300,15 @@ function BookshelfPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {filteredEntries.map((entry) => (
               <div
-                key={entry.id}
+                key={entry.Id}
                 className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
               >
-                <Link to={`/knygos/${entry.bookId}`}>
+                <Link to={`/knygos/${entry.KnygaId}`}>
                   <div className="h-64 bg-gray-200 flex items-center justify-center">
-                    {entry.book?.coverImageUrl ? (
+                    {entry.Knyga?.virselio_nuotrauka ? (
                       <img
-                        src={entry.book.coverImageUrl}
-                        alt={entry.book.title}
+                        src={entry.Knyga.virselio_nuotrauka}
+                        alt={entry.Knyga.knygos_pavadinimas}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -387,27 +317,25 @@ function BookshelfPage() {
                   </div>
                 </Link>
                 <div className="p-4">
-                  <Link to={`/knygos/${entry.bookId}`}>
+                  <Link to={`/knygos/${entry.KnygaId}`}>
                     <h3 className="text-xl font-bold mb-2 hover:text-blue-600">
-                      {entry.book?.title}
+                      {entry.Knyga?.knygos_pavadinimas}
                     </h3>
                   </Link>
                   <p className="text-gray-600 mb-3">
-                    {entry.book?.author?.firstName}{" "}
-                    {entry.book?.author?.lastName}
+                    {entry.Knyga?.autorius_vardas}
                   </p>
 
                   <div className="mb-3">
-                    {editingEntryId === entry.id ? (
-                      // --- RODOMA, KAI REDAGUOJAMA ---
+                    {editingEntryId === entry.Id ? (
                       <>
                         <select
-                          value={tempStatus ?? entry.status}
+                          value={tempStatus ?? entry.tipas}
                           onChange={(e) =>
-                            setTempStatus(e.target.value as BookshelfStatus)
+                            setTempStatus(Number(e.target.value) as BookshelfStatus)
                           }
                           className={`w-full px-3 py-2 rounded-lg font-semibold mb-3 ${getStatusColor(
-                            tempStatus ?? entry.status
+                            tempStatus ?? entry.tipas
                           )}`}
                         >
                           <option value={BookshelfStatus.READ}>
@@ -424,8 +352,8 @@ function BookshelfPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
-                              if (tempStatus && tempStatus !== entry.status) {
-                                handleStatusChange(entry.id, tempStatus);
+                              if (tempStatus !== null && tempStatus !== entry.tipas) {
+                                handleStatusChange(entry.Id, tempStatus);
                               }
                               setEditingEntryId(null);
                               setTempStatus(null);
@@ -446,19 +374,18 @@ function BookshelfPage() {
                         </div>
                       </>
                     ) : (
-                      // --- RODOMA IŠ PRADŽIŲ ---
                       <>
                         <div
                           className={`w-full text-center px-3 py-2 rounded-lg font-semibold mb-3 ${getStatusColor(
-                            entry.status
+                            entry.tipas
                           )}`}
                         >
-                          {getStatusText(entry.status)}
+                          {getStatusText(entry.tipas)}
                         </div>
                         <button
                           onClick={() => {
-                            setEditingEntryId(entry.id);
-                            setTempStatus(entry.status);
+                            setEditingEntryId(entry.Id);
+                            setTempStatus(entry.tipas);
                           }}
                           className="w-full px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
                         >
@@ -469,7 +396,7 @@ function BookshelfPage() {
                   </div>
 
                   <button
-                    onClick={() => handleRemove(entry.id)}
+                    onClick={() => handleRemove(entry.Id)}
                     className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
                     Pašalinti
@@ -481,23 +408,23 @@ function BookshelfPage() {
         )}
 
         {/* Recommendations */}
-        {recommendations.length > 0 && (
+        {recommendations?.length > 0 && (
           <div className="mt-12">
             <h2 className="text-3xl font-bold mb-6">
               Rekomenduojamos knygos jums
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recommendations.slice(0, 6).map((rec) => (
+              {recommendations?.slice(0, 6).map((book) => (
                 <Link
-                  key={rec.book.id}
-                  to={`/knygos/${rec.book.id}`}
+                  key={book.Id}
+                  to={`/knygos/${book.Id}`}
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
                 >
                   <div className="h-64 bg-gray-200 flex items-center justify-center">
-                    {rec.book.coverImageUrl ? (
+                    {book.virselio_nuotrauka ? (
                       <img
-                        src={rec.book.coverImageUrl}
-                        alt={rec.book.title}
+                        src={book.virselio_nuotrauka}
+                        alt={book.knygos_pavadinimas}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -505,11 +432,11 @@ function BookshelfPage() {
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2">{rec.book.title}</h3>
+                    <h3 className="text-xl font-bold mb-2">{book.knygos_pavadinimas}</h3>
                     <p className="text-gray-600 mb-2">
-                      {rec.book.author?.firstName} {rec.book.author?.lastName}
+                      {book.autorius_vardas}
                     </p>
-                    <p className="text-sm text-blue-600 italic">{rec.reason}</p>
+                    <p className="text-sm text-gray-500">{book.Zanras?.pavadinimas}</p>
                   </div>
                 </Link>
               ))}
@@ -544,7 +471,6 @@ function BookshelfPage() {
               </div>
             ) : (
               <>
-                {/* Search Input */}
                 <div className="mb-4">
                   <label className="block mb-2 font-semibold">
                     Ieškoti knygos
@@ -558,7 +484,6 @@ function BookshelfPage() {
                   />
                 </div>
 
-                {/* Books List */}
                 <div className="mb-4">
                   <label className="block mb-2 font-semibold">
                     Pasirinkite knygą (
@@ -566,10 +491,8 @@ function BookshelfPage() {
                       availableBooks.filter((book) => {
                         const query = searchQuery.toLowerCase();
                         return (
-                          book.title.toLowerCase().includes(query) ||
-                          `${book.author?.firstName} ${book.author?.lastName}`
-                            .toLowerCase()
-                            .includes(query)
+                          book.knygos_pavadinimas.toLowerCase().includes(query) ||
+                          (book.autorius_vardas || '').toLowerCase().includes(query)
                         );
                       }).length
                     }{" "}
@@ -580,28 +503,26 @@ function BookshelfPage() {
                       .filter((book) => {
                         const query = searchQuery.toLowerCase();
                         return (
-                          book.title.toLowerCase().includes(query) ||
-                          `${book.author?.firstName} ${book.author?.lastName}`
-                            .toLowerCase()
-                            .includes(query)
+                          book.knygos_pavadinimas.toLowerCase().includes(query) ||
+                          (book.autorius_vardas || '').toLowerCase().includes(query)
                         );
                       })
                       .map((book) => (
                         <div
-                          key={book.id}
-                          onClick={() => setSelectedBookId(book.id)}
+                          key={book.Id}
+                          onClick={() => setSelectedBookId(book.Id)}
                           className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors ${
-                            selectedBookId === book.id
+                            selectedBookId === book.Id
                               ? "bg-blue-100 border-l-4 border-l-blue-600"
                               : ""
                           }`}
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 w-12 h-16 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-                              {book.coverImageUrl ? (
+                              {book.virselio_nuotrauka ? (
                                 <img
-                                  src={book.coverImageUrl}
-                                  alt={book.title}
+                                  src={book.virselio_nuotrauka}
+                                  alt={book.knygos_pavadinimas}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
@@ -610,16 +531,16 @@ function BookshelfPage() {
                             </div>
                             <div className="flex-grow">
                               <h3 className="font-bold text-lg">
-                                {book.title}
+                                {book.knygos_pavadinimas}
                               </h3>
                               <p className="text-gray-600">
-                                {book.author?.firstName} {book.author?.lastName}
+                                {book.autorius_vardas}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {book.publishYear} • {book.genre?.pavadinimas}
+                                {book.leidimo_metai ? new Date(book.leidimo_metai).getFullYear() : ''} {book?.Zanras?.pavadinimas && `• ${book.Zanras?.pavadinimas}`}
                               </p>
                             </div>
-                            {selectedBookId === book.id && (
+                            {selectedBookId === book.Id && (
                               <div className="flex-shrink-0">
                                 <svg
                                   className="w-6 h-6 text-blue-600"
@@ -640,21 +561,12 @@ function BookshelfPage() {
                   </div>
                 </div>
 
-                <label className="block mb-1 font-semibold">Sąrašas</label>
-                <select className="w-full border rounded-lg px-3 py-2 mb-5">
-                  <option>Perskaityta</option>
-                  <option>Skaitoma</option>
-                  <option>Norima skaityti</option>
-                </select>
-
-                {/* Error Message */}
                 {saveError && (
                   <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                     {saveError}
                   </div>
                 )}
 
-                {/* Action Buttons */}
                 <div className="flex justify-end gap-3">
                   <button
                     onClick={handleCloseModal}

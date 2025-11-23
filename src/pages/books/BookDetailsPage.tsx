@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { Book, Review } from "../../types";
-import axios from "axios";
-import { mockBooks, mockReviews } from "../../mockData";
+import { booksService, reviewsService, bookshelfService } from "../../api";
+import { UserRole, BookshelfStatus } from "../../types";
 
 function BookDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,41 +18,27 @@ function BookDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     setIsAuthenticated(!!token);
-    setIsEditor(user.role === "editor" || user.role === "admin");
-    setUserId(user.id || "");
+    setIsEditor(user.role === UserRole.EDITOR || user.role === UserRole.ADMIN);
+    setIsAdmin(user.role === UserRole.ADMIN);
+    setUserId(user.Id || "");
 
-    fetchBookDetails();
-    fetchReviews();
+    if (id) {
+      fetchBookDetails();
+      fetchReviews();
+    }
   }, [id]);
 
-  // Real API calls - for future use
-  const fetchBookDetailsFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/books/${id}`);
-    return response.data;
-  };
-
-  const fetchReviewsFromAPI = async () => {
-    const response = await axios.get(
-      `https://localhost:7296/api/reviews/book/${id}`,
-    );
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
   const fetchBookDetails = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const foundBook = mockBooks.find((b) => b.id === id);
-      setBook(foundBook || null);
-      if (!foundBook) {
-        setError("Knyga nerasta");
-      }
+      const data = await booksService.getById(id!);
+      setBook(data);
     } catch (err) {
       setError("Nepavyko užkrauti knygos informacijos");
       console.error(err);
@@ -63,9 +49,8 @@ function BookDetailsPage() {
 
   const fetchReviews = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const bookReviews = mockReviews.filter((r) => r.bookId === id);
-      setReviews(bookReviews);
+      const data = await reviewsService.getByBookId(id!);
+      setReviews(data);
     } catch (err) {
       console.error("Failed to fetch reviews", err);
     }
@@ -74,33 +59,36 @@ function BookDetailsPage() {
   const handleDelete = async () => {
     if (window.confirm("Ar tikrai norite ištrinti šią knygą?")) {
       try {
-        await axios.delete(`https://localhost:7296/api/books/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-        });
+        await booksService.delete(id!);
         navigate("/knygos");
       } catch (err) {
         alert("Nepavyko ištrinti knygos");
       }
     }
   };
-  /*
-  const addToBookshelf = async (status: string) => {
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (window.confirm("Ar tikrai norite ištrinti šį atsiliepimą?")) {
+      try {
+        await reviewsService.delete(reviewId);
+        setReviews(reviews.filter(r => r.Id !== reviewId));
+      } catch (err) {
+        alert("Nepavyko ištrinti atsiliepimo");
+      }
+    }
+  };
+
+  const addToBookshelf = async (status: BookshelfStatus) => {
     try {
-      await axios.post('https://localhost:7296/api/bookshelf', {
-        bookId: id,
-        status
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
-        }
+      await bookshelfService.create({
+        KnygaId: id!,
+        tipas: status
       });
       alert('Knyga pridėta į jūsų sąrašą!');
     } catch (err) {
       alert('Nepavyko pridėti knygos į sąrašą');
     }
-  };*/
+  };
 
   if (loading) {
     return (
@@ -142,10 +130,10 @@ function BookDetailsPage() {
             {/* Book Cover */}
             <div className="md:col-span-1">
               <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-                {book.coverImageUrl ? (
+                {book.virselio_nuotrauka ? (
                   <img
-                    src={book.coverImageUrl}
-                    alt={book.title}
+                    src={book.virselio_nuotrauka}
+                    alt={book.knygos_pavadinimas}
                     className="w-full h-full object-cover rounded-lg"
                   />
                 ) : (
@@ -154,38 +142,37 @@ function BookDetailsPage() {
               </div>
 
               {/* Add to Bookshelf */}
-              {/* 
               {isAuthenticated && (
                 <div className="mt-4">
                   <p className="font-semibold mb-2">Pridėti į sąrašą:</p>
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => addToBookshelf('read')}
+                      onClick={() => addToBookshelf(BookshelfStatus.READ)}
                       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                     >
                       Perskaitytos
                     </button>
                     <button
-                      onClick={() => addToBookshelf('reading')}
+                      onClick={() => addToBookshelf(BookshelfStatus.READING)}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                       Skaitomos
                     </button>
                     <button
-                      onClick={() => addToBookshelf('want_to_read')}
+                      onClick={() => addToBookshelf(BookshelfStatus.WANT_TO_READ)}
                       className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
                     >
                       Norimos skaityti
                     </button>
                   </div>
                 </div>
-              )} */}
+              )}
             </div>
 
             {/* Book Details */}
             <div className="md:col-span-2">
               <div className="flex justify-between items-start mb-4">
-                <h1 className="text-4xl font-bold">{book.title}</h1>
+                <h1 className="text-4xl font-bold">{book.knygos_pavadinimas}</h1>
                 {isEditor && (
                   <div className="flex gap-2">
                     <Link
@@ -205,24 +192,24 @@ function BookDetailsPage() {
               </div>
 
               <Link
-                to={`/autoriai/${book.authorId}`}
+                to={`/autoriai/${book.AutoriusId}`}
                 className="text-xl text-blue-600 hover:underline mb-2 block"
               >
-                {book.author?.firstName} {book.author?.lastName}
+                {book.autorius_vardas || (book.Autorius ? `${book.Autorius.vardas} ${book.Autorius.pavarde}` : 'Nežinomas autorius')}
               </Link>
 
               <p className="text-gray-600 mb-4">
-                Leidimo metai: {book.publishYear}
+                Leidimo metai: {book.leidimo_metai ? new Date(book.leidimo_metai).getFullYear() : 'Nežinoma'}
               </p>
 
-              {book.averageRating && (
+              {book.vidutinis_vertinimas !== undefined && book.vidutinis_vertinimas > 0 && (
                 <div className="flex items-center mb-4">
                   <span className="text-yellow-500 text-2xl mr-2">⭐</span>
                   <span className="text-2xl font-bold">
-                    {book.averageRating.toFixed(1)}
+                    {book.vidutinis_vertinimas.toFixed(1)}
                   </span>
                   <span className="text-gray-600 ml-2">
-                    ({book.reviewCount} komentarai)
+                    ({book.komentaru_skaicius} komentarai)
                   </span>
                 </div>
               )}
@@ -230,30 +217,40 @@ function BookDetailsPage() {
               <div className="mb-4">
                 <h3 className="font-semibold mb-2">Žanras:</h3>
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-                  {book.genre?.pavadinimas || "Nežinomas žanras"}
+                  {book.Zanras?.pavadinimas || "Nežinomas žanras"}
                 </span>
+                {book.bestseleris && (
+                  <span className="ml-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                    Bestseleris
+                  </span>
+                )}
               </div>
 
-              {book.genre?.moods && book.genre.moods.length > 0 && (
+              {book.kalba && (
                 <div className="mb-4">
-                  <h3 className="font-semibold mb-2">Nuotaikos:</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {book.genre.moods.map((mood) => (
-                      <span
-                        key={mood.id}
-                        className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full"
-                      >
-                        {mood.pavadinimas}
-                      </span>
-                    ))}
-                  </div>
+                  <h3 className="font-semibold mb-2">Kalba:</h3>
+                  <span>{book.kalba}</span>
+                </div>
+              )}
+
+              {book.psl_skaicius && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Puslapių skaičius:</h3>
+                  <span>{book.psl_skaicius}</span>
+                </div>
+              )}
+
+              {book.ISBN && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">ISBN:</h3>
+                  <span>{book.ISBN}</span>
                 </div>
               )}
 
               <div>
                 <h3 className="font-semibold mb-2">Aprašymas:</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {book.description}
+                  {book.aprasymas || 'Aprašymas nepateiktas'}
                 </p>
               </div>
             </div>
@@ -280,27 +277,20 @@ function BookDetailsPage() {
             <div className="space-y-4">
               {reviews.map((review) => (
                 <div
-                  key={review.id}
-                  className={`bg-white rounded-lg shadow-md p-6 ${review.isAiGenerated ? "border-2 border-purple-500" : ""}`}
+                  key={review.Id}
+                  className="bg-white rounded-lg shadow-md p-6"
                 >
-                  {review.isAiGenerated && (
-                    <div className="mb-2 flex items-center">
-                      <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                        🤖 DI sugeneruotas atsiliepimas
-                      </span>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <span className="font-semibold mr-2">
-                        {review.user?.username || "Nežinomas"}
+                    <div className="flex items-center gap-4">
+                      <span className="font-semibold">
+                        {review.Naudotojas?.slapyvardis || "Nežinomas"}
                       </span>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
                           <span
                             key={i}
                             className={
-                              i < review.rating
+                              i < review.vertinimas
                                 ? "text-yellow-500"
                                 : "text-gray-300"
                             }
@@ -310,25 +300,30 @@ function BookDetailsPage() {
                         ))}
                       </div>
 
-                      {review.userId === userId && (
-                        <div>
-                          <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                      {(review.NaudotojasId === userId || isAdmin) && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDeleteReview(review.Id)}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                          >
                             Ištrinti
                           </button>
-                          <Link
-                            to={`/knygos/${id}/atsiliepimas/redaguoti/${review.id}`}
-                            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
-                          >
-                            Redaguoti
-                          </Link>
+                          {review.NaudotojasId === userId && (
+                            <Link
+                              to={`/knygos/${id}/atsiliepimas/redaguoti/${review.Id}`}
+                              className="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
+                            >
+                              Redaguoti
+                            </Link>
+                          )}
                         </div>
                       )}
                     </div>
                     <span className="text-sm text-gray-500">
-                      {new Date(review.createdAt).toLocaleDateString()}
+                      {new Date(review.komentaro_data).toLocaleDateString('lt-LT')}
                     </span>
                   </div>
-                  <p className="text-gray-700">{review.text}</p>
+                  <p className="text-gray-700">{review.komentaro_tekstas}</p>
                 </div>
               ))}
             </div>

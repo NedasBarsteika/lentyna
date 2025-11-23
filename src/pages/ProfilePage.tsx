@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import ImageUpload from '../components/ImageUpload';
 import type { User } from '../types';
 import { UserRole } from '../types';
+import { authService, uploadsService } from '../api';
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -20,6 +22,8 @@ function ProfilePage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check authentication
@@ -90,19 +94,26 @@ function ProfilePage() {
       }
     }
 
+    setLoading(true);
+
     try {
-      // Here you would make API call to update profile
-      // For now, just update localStorage
-      const updatedUser = {
-        ...user,
-        username: formData.username,
-        email: formData.email
-      };
+      // Įkelti profilio nuotrauką, jei pasirinkta nauja
+      let imageUrl = user?.profilio_nuotrauka;
+      if (profileImage) {
+        imageUrl = await uploadsService.uploadProfilePhoto(profileImage);
+      }
+
+      // Atnaujinti profilį per API
+      const updatedUser = await authService.updateProfile({
+        slapyvardis: formData.username,
+        profilio_nuotrauka: imageUrl,
+      });
 
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser as User);
+      setUser(updatedUser);
       setSuccess('Profilis sėkmingai atnaujintas!');
       setIsEditing(false);
+      setProfileImage(null);
 
       // Clear password fields
       setFormData({
@@ -118,6 +129,8 @@ function ProfilePage() {
       }, 1000);
     } catch (err) {
       setError('Nepavyko atnaujinti profilio');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,8 +146,7 @@ function ProfilePage() {
 
       if (doubleConfirm) {
         try {
-          // Here you would make API call to delete account
-          // For now, just clear localStorage and redirect
+          await authService.deleteProfile();
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           navigate('/');
@@ -198,14 +210,24 @@ function ProfilePage() {
 
             {!isEditing ? (
               <div className="space-y-4">
-                <div>
-                  <label className="text-gray-600 text-sm">Slapyvardis</label>
-                  <p className="text-lg font-medium">{user.username}</p>
-                </div>
-
-                <div>
-                  <label className="text-gray-600 text-sm">El. paštas</label>
-                  <p className="text-lg font-medium">{user.email}</p>
+                <div className="flex items-center gap-4">
+                  {user.profilio_nuotrauka ? (
+                    <img
+                      src={user.profilio_nuotrauka}
+                      alt="Profilio nuotrauka"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-3xl text-gray-500">
+                        {user.slapyvardis.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xl font-medium">{user.slapyvardis}</p>
+                    <p className="text-gray-600">{user.el_pastas}</p>
+                  </div>
                 </div>
 
                 <div>
@@ -216,7 +238,7 @@ function ProfilePage() {
                 <div>
                   <label className="text-gray-600 text-sm">Registracijos data</label>
                   <p className="text-lg font-medium">
-                    {new Date(user.createdAt).toLocaleDateString('lt-LT', {
+                    {new Date(user.sukurimo_data).toLocaleDateString('lt-LT', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
@@ -226,6 +248,13 @@ function ProfilePage() {
               </div>
             ) : (
               <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <ImageUpload
+                  value={profileImage}
+                  onChange={setProfileImage}
+                  currentImageUrl={user.profilio_nuotrauka}
+                  label="Profilio nuotrauka"
+                />
+
                 <div>
                   <label className="block text-gray-700 text-sm font-medium mb-2">
                     Slapyvardis
@@ -251,8 +280,9 @@ function ProfilePage() {
                     value={formData.email}
                     onChange={handleChange}
                     className="w-full p-2 border rounded"
-                    required
+                    disabled
                   />
+                  <p className="text-xs text-gray-500 mt-1">El. pašto keisti negalima</p>
                 </div>
 
                 <div className="border-t pt-4 mt-4">
@@ -307,24 +337,27 @@ function ProfilePage() {
                 <div className="flex gap-3 mt-6">
                   <button
                     type="submit"
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+                    disabled={loading}
+                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
                   >
-                    Išsaugoti
+                    {loading ? 'Saugoma...' : 'Išsaugoti'}
                   </button>
                   <button
                     type="button"
+                    disabled={loading}
                     onClick={() => {
                       setIsEditing(false);
+                      setProfileImage(null);
                       setFormData({
-                        username: user.username,
-                        email: user.email,
+                        username: user.slapyvardis,
+                        email: user.el_pastas,
                         currentPassword: '',
                         newPassword: '',
                         confirmPassword: ''
                       });
                       setError(null);
                     }}
-                    className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+                    className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 disabled:bg-gray-300"
                   >
                     Atšaukti
                   </button>

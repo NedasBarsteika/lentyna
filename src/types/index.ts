@@ -1,226 +1,324 @@
 // src/types/index.ts
 
-// Const objects instead of enums (for verbatimModuleSyntax compatibility)
+// User Roles (matching backend)
 export const UserRole = {
   ADMIN: "admin",
-  MODERATOR: "moderator",
-  EDITOR: "editor",
-  READER: "reader"
+  MODERATOR: "moderatorius",
+  EDITOR: "redaktorius",
+  READER: "naudotojas"
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
-export const BookMood = {
-  HAPPY: "happy",
-  SAD: "sad",
-  NEUTRAL: "neutral"
-} as const;
-
-export type BookMood = typeof BookMood[keyof typeof BookMood];
-
+// Bookshelf Status (matching backend enum values)
 export const BookshelfStatus = {
-  READ: "read",
-  READING: "reading",
-  WANT_TO_READ: "want_to_read"
+  READ: 0,        // skaityta
+  READING: 2,     // skaitoma
+  WANT_TO_READ: 1 // norima_skaityti
 } as const;
 
 export type BookshelfStatus = typeof BookshelfStatus[keyof typeof BookshelfStatus];
 
-// Mood Types (Nuotaika)
-export interface Mood {
-  id: string;
-  pavadinimas: string; // "Džiugi", "Liūdna", "Neutrali"
-}
+// ============ Backend Response Types ============
 
-// Genre Types (Žanras)
-export interface Genre {
-  id: string;
-  pavadinimas: string;
-  moodIds: string[]; // Many-to-many relationship with Moods
-  moods?: Mood[]; // Populated moods
-}
-
-// User Types
+// User / Naudotojas
 export interface User {
-  id: string;
-  username: string;
-  email: string;
+  Id: string;
+  slapyvardis: string;
+  el_pastas: string;
   role: UserRole;
-  createdAt: Date;
+  sukurimo_data: string;
+  profilio_nuotrauka?: string;
 }
 
-// Author Types
+export interface AuthResponse {
+  token: string;
+  naudotojas: User;
+}
+
+export interface LoginDto {
+  el_pastas: string;
+  slaptazodis: string;
+}
+
+export interface RegisterDto {
+  slapyvardis: string;
+  el_pastas: string;
+  slaptazodis: string;
+}
+
+export interface UpdateProfileDto {
+  slapyvardis?: string;
+  profilio_nuotrauka?: string;
+}
+
+// Genre / Žanras
+export interface Genre {
+  Id: string;
+  pavadinimas: string;
+}
+
+// Mood / Nuotaika
+export interface Mood {
+  Id: string;
+  pavadinimas: string;
+}
+
+// Author / Autorius
 export interface Author {
-  id: string;
-  firstName: string;
-  lastName: string;
-  biography: string;
-  photoUrl?: string;
-  books?: Book[];
-  createdAt: Date;
-  updatedAt: Date;
+  Id: string;
+  vardas: string;
+  pavarde: string;
+  gimimo_metai?: string;
+  mirties_data?: string;
+  curiculum_vitae?: string;
+  nuotrauka?: string;
+  tautybe?: string;
+  knygu_skaicius?: number;
 }
 
 export interface AuthorCreateDto {
-  firstName: string;
-  lastName: string;
-  biography: string;
-  photoUrl?: string;
+  vardas: string;
+  pavarde: string;
+  gimimo_metai?: string;
+  mirties_data?: string;
+  curiculum_vitae?: string;
+  nuotrauka?: string;
+  tautybe?: string;
 }
 
-// Book Types
+export interface AuthorUpdateDto {
+  vardas?: string;
+  pavarde?: string;
+  gimimo_metai?: string;
+  mirties_data?: string;
+  curiculum_vitae?: string;
+  nuotrauka?: string;
+  tautybe?: string;
+}
+
+// Book / Knyga
 export interface Book {
-  id: string;
-  title: string;
-  description: string;
-  authorId: string;
-  author?: Author;
-  publishYear: number;
-  genreId: string; // One genre (changed from genres: string[])
-  genre?: Genre; // Populated genre with moods
-  coverImageUrl?: string;
-  averageRating?: number;
-  reviewCount?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  Id: string;
+  knygos_pavadinimas: string;
+  leidimo_metai?: string;
+  aprasymas?: string;
+  psl_skaicius?: number;
+  ISBN?: string;
+  virselio_nuotrauka?: string;
+  kalba?: string;
+  bestseleris: boolean;
+  AutoriusId: string;
+  ZanrasId: string;
+  // Populated fields from API
+  autorius_vardas?: string;
+  vidutinis_vertinimas?: number;
+  komentaru_skaicius?: number;
+  Zanras?: Genre;
+  Autorius?: Author;
+  zanrasObj?: Genre;
 }
 
 export interface BookCreateDto {
-  title: string;
-  description: string;
-  authorId: string;
-  publishYear: number;
-  genreId: string; // Changed from genres: string[]
-  coverImageUrl?: string;
+  knygos_pavadinimas: string;
+  leidimo_metai?: string;
+  aprasymas?: string;
+  psl_skaicius?: number;
+  ISBN?: string;
+  virselio_nuotrauka?: string;
+  kalba?: string;
+  bestseleris?: boolean;
+  AutoriusId: string;
+  ZanrasId: string;
+}
+
+export interface BookUpdateDto {
+  knygos_pavadinimas?: string;
+  leidimo_metai?: string;
+  aprasymas?: string;
+  psl_skaicius?: number;
+  ISBN?: string;
+  virselio_nuotrauka?: string;
+  kalba?: string;
+  bestseleris?: boolean;
+  AutoriusId?: string;
+  ZanrasId?: string;
 }
 
 export interface BookSearchDto {
-  scenarioDescription?: string;
-  genreIds?: string[]; // Changed from genres: string[]
-  moodIds?: string[]; // Changed from moods: BookMood[]
-  authorId?: string;
-  minYear?: number;
-  maxYear?: number;
+  ScenarijausAprasymas?: string;
+  ZanruIds?: string[];
+  NuotaikuIds?: string[];
 }
 
-// Review Types
+// Review / Komentaras (knygos atsiliepimas)
 export interface Review {
-  id: string;
-  bookId: string;
-  userId: string;
-  user?: User;
-  text: string;
-  rating: number; // 1-5
-  isAiGenerated: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  Id: string;
+  komentaro_tekstas: string;
+  komentaro_data: string;
+  vertinimas: number;
+  redagavimo_data?: string;
+  NaudotojasId: string;
+  KnygaId?: string;
+  TemaId?: string;
+  // Populated
+  Naudotojas?: User;
 }
 
 export interface ReviewCreateDto {
-  bookId: string;
-  text: string;
-  rating: number;
+  komentaro_tekstas: string;
+  vertinimas: number;
+  KnygaId?: string;
+  TemaId?: string;
 }
 
-// Bookshelf Types
+export interface ReviewUpdateDto {
+  komentaro_tekstas?: string;
+  vertinimas?: number;
+}
+
+// AI Generated Review
+export interface AIReview {
+  Id: string;
+  sugeneravimo_data: string;
+  tekstas: string;
+  modelis: string;
+  KnygaId: string;
+}
+
+// Bookshelf Entry / Įrašas
 export interface BookshelfEntry {
-  id: string;
-  userId: string;
-  bookId: string;
-  book?: Book;
-  status: BookshelfStatus;
-  addedAt: Date;
+  Id: string;
+  tipas: BookshelfStatus;
+  sukurimo_data: string;
+  redagavimo_data?: string;
+  NaudotojasId: string;
+  KnygaId: string;
+  Knyga?: Book;
 }
 
 export interface BookshelfCreateDto {
-  bookId: string;
-  status: BookshelfStatus;
+  KnygaId: string;
+  tipas: BookshelfStatus;
 }
 
-// Forum Types
+export interface BookshelfUpdateDto {
+  tipas: BookshelfStatus;
+}
+
+// Citation / Citata
+export interface Citation {
+  Id: string;
+  citatos_tekstas: string;
+  citatos_data?: string;
+  citatos_saltinis?: string;
+  AutoriusId: string;
+}
+
+export interface CitationCreateDto {
+  citatos_tekstas: string;
+  citatos_data?: string;
+  citatos_saltinis?: string;
+  AutoriusId: string;
+}
+
+// Forum Topic / Tema
 export interface ForumTopic {
-  id: string;
-  title: string;
-  description: string;
-  authorId: string;
-  author?: User;
-  isPinned: boolean;
-  commentCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  Id: string;
+  pavadinimas: string;
+  tekstas: string;
+  sukurimo_data: string;
+  redagavimo_data?: string;
+  istrynimo_data?: string;
+  prikabinta: boolean;
+  NaudotojasId: string;
+  // Plokšti autoriaus laukai iš backend
+  autorius_slapyvardis?: string;
+  autorius_nuotrauka?: string;
+  komentaru_skaicius?: number;
+  komentarai?: ForumComment[];
 }
 
 export interface ForumTopicCreateDto {
-  title: string;
-  description: string;
+  pavadinimas: string;
+  tekstas: string;
 }
 
+export interface ForumTopicUpdateDto {
+  pavadinimas?: string;
+  tekstas?: string;
+}
+
+// Forum Comment (same as Review but for topics)
 export interface ForumComment {
-  id: string;
-  topicId: string;
-  authorId: string;
-  author?: User;
-  text: string;
-  createdAt: Date;
-  updatedAt: Date;
+  Id: string;
+  komentaro_tekstas: string;
+  komentaro_data: string;
+  vertinimas: number;
+  redagavimo_data?: string;
+  NaudotojasId: string;
+  TemaId: string;
+  KnygaId?: string | null;
+  // Plokšti naudotojo laukai iš backend
+  naudotojo_slapyvardis?: string;
+  naudotojo_nuotrauka?: string;
 }
 
 export interface ForumCommentCreateDto {
-  topicId: string;
-  text: string;
+  komentaro_tekstas: string;
+  vertinimas: number;
 }
 
-// Book Club Types
-export interface BookClubWeek {
-  id: string;
-  weekNumber: number;
-  year: number;
-  nominatedBooks: BookClubNomination[];
-  meetingDate: Date;
-  weatherForecast?: WeatherForecast;
-  winnerId?: string;
-  createdAt: Date;
+// Voting / Balsavimas
+export interface Voting {
+  Id: string;
+  balsavimo_pradzia: string;
+  balsavimo_pabaiga: string;
+  susitikimo_data?: string;
+  isrinkta_knyga_id?: string;
+  uzbaigtas: boolean;
+  nominuotos_knygos?: VotingBook[];
 }
 
-export interface BookClubNomination {
-  id: string;
-  weekId: string;
-  bookId: string;
-  book?: Book;
-  voteCount: number;
+export interface VotingBook {
+  Id: string;
+  knygos_pavadinimas: string;
+  autorius_vardas?: string;
+  virselio_nuotrauka?: string;
+  balsu_skaicius: number;
 }
 
-export interface BookClubVote {
-  id: string;
-  weekId: string;
-  bookId: string;
-  userId: string;
-  createdAt: Date;
+export interface VotingCreateDto {
+  balsavimo_pradzia: string;
+  balsavimo_pabaiga: string;
+  susitikimo_data?: string;
+  nominuotos_knygos: string[];
 }
 
+export interface VoteDto {
+  BalsavimasId: string;
+  KnygaId: string;
+}
+
+// Following / Sekimas
+export interface Following {
+  NaudotojasId: string;
+  AutoriusId: string;
+  sekimo_pradzia: string;
+  autorius?: Author;
+}
+
+export interface FollowDto {
+  AutoriusId: string;
+}
+
+// Weather Forecast
 export interface WeatherForecast {
-  date: Date;
-  temperature: number;
-  description: string;
-  willRain: boolean;
-  recommendation: "outdoor" | "indoor" | "flexible";
+  oro_prognoze: string;
 }
 
-// Favorite Authors
-export interface FavoriteAuthor {
-  id: string;
-  userId: string;
-  authorId: string;
-  author?: Author;
-  addedAt: Date;
-}
-
-// Book Recommendations
-export interface BookRecommendation {
-  book: Book;
-  score: number;
-  reason: string;
-}
+// Book Recommendation (backend grąžina tiesiog Book objektus)
+export type BookRecommendation = Book;
 
 // API Response Types
 export interface ApiResponse<T> {
@@ -229,10 +327,13 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
+// Pagination response from backend
 export interface PaginatedResponse<T> {
-  data: T[];
+  items: T[];
   page: number;
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }

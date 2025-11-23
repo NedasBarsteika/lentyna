@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import type { Author } from '../../types';
-import axios from 'axios';
-import { mockAuthors } from '../../mockData';
+import { authorsService } from '../../api';
+import { UserRole } from '../../types';
 
 function AuthorsPage() {
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -14,26 +14,23 @@ function AuthorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditor, setIsEditor] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setIsEditor(user.role === 'editor' || user.role === 'admin');
+    setIsEditor(user.role === UserRole.EDITOR || user.role === UserRole.ADMIN);
 
     fetchAuthors();
   }, []);
 
-  // Real API call - for future use
-  const fetchAuthorsFromAPI = async () => {
-    const response = await axios.get('https://localhost:7296/api/authors');
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
-  const fetchAuthors = async () => {
+  const fetchAuthors = async (pageNum: number = 1) => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setAuthors(mockAuthors);
+      const response = await authorsService.getAll({ page: pageNum, pageSize: 12 });
+      setAuthors(response.items);
+      setTotalPages(response.totalPages);
+      setPage(response.page);
     } catch (err: any) {
       setError('Nepavyko užkrauti autorių');
       console.error(err);
@@ -43,7 +40,7 @@ function AuthorsPage() {
   };
 
   const filteredAuthors = authors.filter(author =>
-    `${author.firstName} ${author.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+    `${author.vardas} ${author.pavarde}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -94,38 +91,63 @@ function AuthorsPage() {
             <p className="text-xl text-gray-600">Autorių nerasta</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAuthors.map((author) => (
-              <Link
-                key={author.id}
-                to={`/autoriai/${author.id}`}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-4">
-                    {author.photoUrl ? (
-                      <img
-                        src={author.photoUrl}
-                        alt={`${author.firstName} ${author.lastName}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-4xl">👤</span>
-                    )}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredAuthors.map((author) => (
+                <Link
+                  key={author.Id}
+                  to={`/autoriai/${author.Id}`}
+                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6"
+                >
+                  <div className="flex items-center mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-4">
+                      {author.nuotrauka ? (
+                        <img
+                          src={author.nuotrauka}
+                          alt={`${author.vardas} ${author.pavarde}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-4xl">👤</span>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">{author.vardas} {author.pavarde}</h3>
+                      {author.knygu_skaicius !== undefined && (
+                        <p className="text-gray-600 text-sm">{author.knygu_skaicius} knygos</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold">{author.firstName} {author.lastName}</h3>
-                    {author.books && (
-                      <p className="text-gray-600 text-sm">{author.books.length} knygos</p>
-                    )}
-                  </div>
-                </div>
-                <p className="text-gray-700 line-clamp-3">
-                  {author.biography}
-                </p>
-              </Link>
-            ))}
-          </div>
+                  <p className="text-gray-700 line-clamp-3">
+                    {author.curiculum_vitae || 'Biografija nepateikta'}
+                  </p>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                <button
+                  onClick={() => fetchAuthors(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Ankstesnis
+                </button>
+                <span className="px-4 py-2">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => fetchAuthors(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Kitas
+                </button>
+              </div>
+            )}
+          </>
         )}
       </motion.div>
 

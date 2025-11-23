@@ -6,8 +6,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ImageUpload from "../../components/ImageUpload";
 import type { Author, Genre } from "../../types";
-import axios from "axios";
-import { mockAuthors, mockBooks, mockGenres } from "../../mockData";
+import { booksService, authorsService, genresService, uploadsService } from "../../api";
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -16,101 +15,73 @@ function BookFormPage() {
 
   const [authors, setAuthors] = useState<Author[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [formData, setFormData] = useState<{
-    title: string;
-    description: string;
-    authorId: string;
-    publishYear: number;
-    genreId: string;
-  }>({
-    title: "",
-    description: "",
-    authorId: "",
-    publishYear: new Date().getFullYear(),
-    genreId: "",
+  const [formData, setFormData] = useState({
+    knygos_pavadinimas: "",
+    aprasymas: "",
+    AutoriusId: "",
+    leidimo_metai: new Date().toISOString().split('T')[0],
+    ZanrasId: "",
+    psl_skaicius: "",
+    ISBN: "",
+    kalba: "",
+    bestseleris: false,
+    virselio_nuotrauka: "",
   });
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [currentCoverImageUrl, setCurrentCoverImageUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAuthors();
-    fetchGenres();
-    if (isEditMode) {
-      fetchBook();
-    }
+    loadInitialData();
   }, [id]);
 
-  // Real API calls - for future use
-  const fetchAuthorsFromAPI = async () => {
-    const response = await axios.get("https://localhost:7296/api/authors");
-    return response.data;
-  };
-
-  const fetchBookFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/books/${id}`);
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
-  const fetchAuthors = async () => {
+  const loadInitialData = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      setAuthors(mockAuthors);
-    } catch (err) {
-      console.error("Failed to fetch authors", err);
-    }
-  };
+      const [authorsResponse, genresData] = await Promise.all([
+        authorsService.getAll(),
+        genresService.getAll()
+      ]);
+      setAuthors(authorsResponse.items);
+      setGenres(genresData);
 
-  const fetchGenres = async () => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      setGenres(mockGenres);
-    } catch (err) {
-      console.error("Failed to fetch genres", err);
-    }
-  };
-
-  const fetchBook = async () => {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const book = mockBooks.find((b) => b.id === id);
-      if (book) {
+      if (isEditMode && id) {
+        const book = await booksService.getById(id);
         setFormData({
-          title: book.title,
-          description: book.description,
-          authorId: book.authorId,
-          publishYear: book.publishYear,
-          genreId: book.genreId,
+          knygos_pavadinimas: book.knygos_pavadinimas,
+          aprasymas: book.aprasymas || "",
+          AutoriusId: book.AutoriusId,
+          leidimo_metai: book.leidimo_metai || new Date().toISOString().split('T')[0],
+          ZanrasId: book.ZanrasId,
+          psl_skaicius: book.psl_skaicius?.toString() || "",
+          ISBN: book.ISBN || "",
+          kalba: book.kalba || "",
+          bestseleris: book.bestseleris,
+          virselio_nuotrauka: book.virselio_nuotrauka || "",
         });
-        setCurrentCoverImageUrl(book.coverImageUrl || "");
       }
     } catch (err) {
-      setError("Nepavyko užkrauti knygos informacijos");
+      setError("Nepavyko užkrauti duomenų");
+      console.error(err);
     }
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setFormData({ ...formData, [name]: (e.target as HTMLInputElement).checked });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (
-      !formData.title ||
-      !formData.description ||
-      !formData.authorId ||
-      !formData.genreId
-    ) {
+    if (!formData.knygos_pavadinimas || !formData.AutoriusId || !formData.ZanrasId) {
       setError("Užpildykite visus privalomus laukus");
       return;
     }
@@ -118,46 +89,37 @@ function BookFormPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-
-      // Create FormData for multipart upload
-      const submitData = new FormData();
-      submitData.append("title", formData.title);
-      submitData.append("description", formData.description);
-      submitData.append("authorId", formData.authorId);
-      submitData.append("publishYear", formData.publishYear.toString());
-      submitData.append("genreId", formData.genreId);
-
-      // Append cover image file if a new one was uploaded
+      // Įkelti nuotrauką, jei pasirinkta nauja
+      let imageUrl = formData.virselio_nuotrauka;
       if (coverImage) {
-        submitData.append("coverImage", coverImage);
+        imageUrl = await uploadsService.uploadBookCover(coverImage);
       }
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      const bookData = {
+        knygos_pavadinimas: formData.knygos_pavadinimas,
+        aprasymas: formData.aprasymas || undefined,
+        AutoriusId: formData.AutoriusId,
+        leidimo_metai: formData.leidimo_metai || undefined,
+        ZanrasId: formData.ZanrasId,
+        psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+        ISBN: formData.ISBN || undefined,
+        kalba: formData.kalba || undefined,
+        bestseleris: formData.bestseleris,
+        virselio_nuotrauka: imageUrl || undefined,
       };
 
-      if (isEditMode) {
-        await axios.put(
-          `https://localhost:7296/api/books/${id}`,
-          submitData,
-          config,
-        );
+      if (isEditMode && id) {
+        await booksService.update(id, bookData);
         alert("Knyga sėkmingai atnaujinta!");
+        navigate(`/knygos/${id}`);
       } else {
-        const response = await axios.post(
-          "https://localhost:7296/api/books",
-          submitData,
-          config,
-        );
+        const response = await booksService.create(bookData);
         alert("Knyga sėkmingai sukurta!");
-        navigate(`/knygos/${response.data.id}`);
+        navigate(`/knygos/${response.Id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data || "Nepavyko išsaugoti knygos");
+      console.error(err);
+      setError(err.response?.data?.message || "Nepavyko išsaugoti knygos");
     } finally {
       setLoading(false);
     }
@@ -192,92 +154,130 @@ function BookFormPage() {
             <label className="block font-semibold mb-2">Pavadinimas *</label>
             <input
               type="text"
-              name="title"
-              value={formData.title}
+              name="knygos_pavadinimas"
+              value={formData.knygos_pavadinimas}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg"
               required
+              maxLength={255}
             />
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Aprašymas *</label>
+            <label className="block font-semibold mb-2">Aprašymas</label>
             <textarea
-              name="description"
-              value={formData.description}
+              name="aprasymas"
+              value={formData.aprasymas}
               onChange={handleChange}
               rows={6}
               className="w-full px-4 py-2 border rounded-lg"
-              required
             />
           </div>
 
           <div>
             <label className="block font-semibold mb-2">Autorius *</label>
             <select
-              name="authorId"
-              value={formData.authorId}
+              name="AutoriusId"
+              value={formData.AutoriusId}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg"
               required
             >
               <option value="">Pasirinkite autorių</option>
               {authors.map((author) => (
-                <option key={author.id} value={author.id}>
-                  {author.firstName} {author.lastName}
+                <option key={author.Id} value={author.Id}>
+                  {author.vardas} {author.pavarde}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Leidimo metai *</label>
+            <label className="block font-semibold mb-2">Leidimo data</label>
             <input
-              type="number"
-              name="publishYear"
-              value={formData.publishYear}
+              type="date"
+              name="leidimo_metai"
+              value={formData.leidimo_metai}
               onChange={handleChange}
-              min="1000"
-              max={new Date().getFullYear() + 1}
               className="w-full px-4 py-2 border rounded-lg"
-              required
             />
           </div>
 
           <div>
             <label className="block font-semibold mb-2">Žanras *</label>
             <select
-              name="genreId"
-              value={formData.genreId}
+              name="ZanrasId"
+              value={formData.ZanrasId}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg"
               required
             >
               <option value="">Pasirinkite žanrą</option>
               {genres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
+                <option key={genre.Id} value={genre.Id}>
                   {genre.pavadinimas}
                 </option>
               ))}
             </select>
-            {formData.genreId && (
-              <p className="mt-2 text-sm text-gray-600">
-                Nuotaikos:{" "}
-                {genres
-                  .find((g) => g.id === formData.genreId)
-                  ?.moods?.map((m) => m.pavadinimas)
-                  .join(", ")}
-              </p>
-            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold mb-2">Puslapių skaičius</label>
+              <input
+                type="number"
+                name="psl_skaicius"
+                value={formData.psl_skaicius}
+                onChange={handleChange}
+                min="1"
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">ISBN</label>
+              <input
+                type="text"
+                name="ISBN"
+                value={formData.ISBN}
+                onChange={handleChange}
+                maxLength={20}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-2">Kalba</label>
+            <input
+              type="text"
+              name="kalba"
+              value={formData.kalba}
+              onChange={handleChange}
+              maxLength={50}
+              className="w-full px-4 py-2 border rounded-lg"
+              placeholder="pvz. Lietuvių"
+            />
           </div>
 
           <ImageUpload
             value={coverImage}
             onChange={setCoverImage}
-            currentImageUrl={currentCoverImageUrl}
-            label="Knygos viršelis"
-            maxSizeMB={5}
+            currentImageUrl={formData.virselio_nuotrauka}
+            label="Viršelio nuotrauka"
           />
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="bestseleris"
+              id="bestseleris"
+              checked={formData.bestseleris}
+              onChange={handleChange}
+              className="w-5 h-5"
+            />
+            <label htmlFor="bestseleris" className="font-semibold">Bestseleris</label>
+          </div>
 
           <div className="flex gap-4">
             <button

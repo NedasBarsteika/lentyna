@@ -4,126 +4,52 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import type { ForumTopic, BookClubWeek } from "../../types";
-import axios from "axios";
-import { mockForumTopics, mockBookClubWeek } from "../../mockData";
+import type { ForumTopic, Voting } from "../../types";
+import { forumService, votingService } from "../../api";
 
 function ForumPage() {
   const [topics, setTopics] = useState<ForumTopic[]>([]);
-  const [bookClubWeek, setBookClubWeek] = useState<BookClubWeek | null>(null);
+  const [currentVoting, setCurrentVoting] = useState<Voting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     setIsAuthenticated(!!token);
 
     fetchTopics();
-    fetchBookClubWeek();
+    fetchCurrentVoting();
   }, []);
 
-  // Real API calls - for future use
-  const fetchTopicsFromAPI = async () => {
-    const response = await axios.get("https://localhost:7296/api/forum/topics");
-    return response.data;
-  };
-
-  const fetchBookClubWeekFromAPI = async () => {
-    const response = await axios.get(
-      "https://localhost:7296/api/bookclub/current",
-    );
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
-  const fetchTopics = async () => {
+  const fetchTopics = async (pageNum: number = 1) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setTopics(mockForumTopics);
+      const response = await forumService.getAllTopics({ page: pageNum, pageSize: 20 });
+      setTopics(response.items);
+      setTotalPages(response.totalPages);
+      setPage(response.page);
     } catch (err: any) {
-      setError("Nepavyko užkrauti forume temų");
+      setError("Nepavyko užkrauti forumo temų");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchBookClubWeek = async () => {
+  const fetchCurrentVoting = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Try to fetch weather from Meteo API
-      const meetingDate = mockBookClubWeek.meetingDate;
-      let weatherForecast = mockBookClubWeek.weatherForecast;
-
-      try {
-        // Open-Meteo API for Kaunas (KTU) coordinates
-        const lat = 54.8985;
-        const lon = 23.9036;
-        const date = new Date(meetingDate);
-        const dateStr = date.toISOString().split("T")[0];
-
-        const weatherResponse = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe/Vilnius&start_date=${dateStr}&end_date=${dateStr}`,
-        );
-
-        if (weatherResponse.ok) {
-          const weatherData = await weatherResponse.json();
-          const temp = Math.round(
-            (weatherData.daily.temperature_2m_max[0] +
-              weatherData.daily.temperature_2m_min[0]) /
-              2,
-          );
-          const rainProb = weatherData.daily.precipitation_probability_max[0];
-
-          let description = "";
-          let willRain = false;
-          let recommendation: "outdoor" | "indoor" | "flexible" = "flexible";
-
-          if (rainProb > 70) {
-            description = "Tikėtinas lietus";
-            willRain = true;
-            recommendation = "indoor";
-          } else if (rainProb > 40) {
-            description = "Galimas lietus";
-            willRain = true;
-            recommendation = "flexible";
-          } else if (temp < 5) {
-            description = "Šalta";
-            recommendation = "indoor";
-          } else if (temp < 15) {
-            description = "Vėsu";
-            recommendation = "flexible";
-          } else {
-            description = "Gražus oras";
-            recommendation = "outdoor";
-          }
-
-          weatherForecast = {
-            date: new Date(dateStr),
-            temperature: temp,
-            description,
-            willRain,
-            recommendation,
-          };
-        }
-      } catch (weatherErr) {
-        console.log("Using mock weather data");
-      }
-
-      setBookClubWeek({
-        ...mockBookClubWeek,
-        weatherForecast,
-      });
+      const voting = await votingService.getCurrent();
+      setCurrentVoting(voting);
     } catch (err) {
-      console.error("Failed to fetch book club week", err);
+      console.error("Failed to fetch current voting", err);
     }
   };
 
-  const pinnedTopics = topics.filter((t) => t.isPinned);
-  const regularTopics = topics.filter((t) => !t.isPinned);
+  const pinnedTopics = topics.filter((t) => t.prikabinta);
+  const regularTopics = topics.filter((t) => !t.prikabinta);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -148,29 +74,53 @@ function ForumPage() {
           )}
         </div>
 
+        {/* Book Club Link */}
+        {currentVoting && (
+          <Link
+            to="/forumas/klubas"
+            className="block bg-yellow-50 border-l-4 border-yellow-500 rounded-lg shadow-md p-4 mb-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center mb-2">
+              <span className="text-xl mr-2">📌</span>
+              <h3 className="text-xl font-bold">Knygų Klubas - Balsavimas</h3>
+            </div>
+            <p className="text-gray-600 mb-2">
+              Dalyvaukite balsavime už savaitės knygą!
+              {currentVoting.susitikimo_data && (
+                <span className="ml-2">
+                  Susitikimas: {new Date(currentVoting.susitikimo_data).toLocaleDateString('lt-LT')}
+                </span>
+              )}
+            </p>
+          </Link>
+        )}
+
         {/* Pinned Topics */}
         {pinnedTopics.length > 0 && (
           <div className="mb-6">
             {pinnedTopics.map((topic) => (
               <Link
-                key={topic.id}
-                to={`/forumas/klubas`}
+                key={topic.Id}
+                to={`/forumas/tema/${topic.Id}`}
                 className="block bg-yellow-50 border-l-4 border-yellow-500 rounded-lg shadow-md p-4 mb-3 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-grow">
                     <div className="flex items-center mb-2">
                       <span className="text-xl mr-2">📌</span>
-                      <h3 className="text-xl font-bold">{topic.title}</h3>
+                      <h3 className="text-xl font-bold">{topic.pavadinimas}</h3>
                     </div>
-                    <p className="text-gray-600 mb-2">{topic.description}</p>
+                    <p className="text-gray-600 mb-2 line-clamp-2">{topic.tekstas}</p>
                     <div className="flex items-center text-sm text-gray-500">
                       <span className="mr-4">
-                        👤 {topic.author?.username || "Nežinomas"}
+                        👤 {topic?.autorius_slapyvardis || "Nežinomas"}
                       </span>
-                      <span>
-                        {new Date(topic.createdAt).toLocaleDateString("lt-LT")}
+                      <span className="mr-4">
+                        {new Date(topic.sukurimo_data).toLocaleDateString("lt-LT")}
                       </span>
+                      {topic.komentaru_skaicius !== undefined && (
+                        <span>💬 {topic.komentaru_skaicius}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -193,26 +143,54 @@ function ForumPage() {
             <p className="text-xl text-gray-600">Temų dar nėra</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {regularTopics.map((topic) => (
-              <Link
-                key={topic.id}
-                to={`/forumas/tema/${topic.id}`}
-                className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
-              >
-                <h3 className="text-xl font-bold mb-2">{topic.title}</h3>
-                <p className="text-gray-600 mb-2">{topic.description}</p>
-                <div className="flex items-center text-sm text-gray-500">
-                  <span className="mr-4">
-                    👤 {topic.author?.username || "Nežinomas"}
-                  </span>
-                  <span>
-                    {new Date(topic.createdAt).toLocaleDateString("lt-LT")}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {regularTopics.map((topic) => (
+                <Link
+                  key={topic.Id}
+                  to={`/forumas/tema/${topic.Id}`}
+                  className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+                >
+                  <h3 className="text-xl font-bold mb-2">{topic.pavadinimas}</h3>
+                  <p className="text-gray-600 mb-2 line-clamp-2">{topic.tekstas}</p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="mr-4">
+                      👤 {topic?.autorius_slapyvardis || "Nežinomas"}
+                    </span>
+                    <span className="mr-4">
+                      {new Date(topic.sukurimo_data).toLocaleDateString("lt-LT")}
+                    </span>
+                    {topic.komentaru_skaicius !== undefined && (
+                      <span>💬 {topic.komentaru_skaicius}</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                <button
+                  onClick={() => fetchTopics(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Ankstesnis
+                </button>
+                <span className="px-4 py-2">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => fetchTopics(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Kitas
+                </button>
+              </div>
+            )}
+          </>
         )}
       </motion.div>
 

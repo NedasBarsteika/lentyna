@@ -1,10 +1,10 @@
 // src/pages/forum/TopicFormPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import axios from "axios";
+import { forumService } from "../../api";
 
 function TopicFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -12,11 +12,29 @@ function TopicFormPage() {
   const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+    pavadinimas: "",
+    tekstas: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      fetchTopic();
+    }
+  }, [id]);
+
+  const fetchTopic = async () => {
+    try {
+      const topic = await forumService.getTopicById(id!);
+      setFormData({
+        pavadinimas: topic.pavadinimas,
+        tekstas: topic.tekstas,
+      });
+    } catch (err) {
+      setError("Nepavyko užkrauti temos informacijos");
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -28,7 +46,7 @@ function TopicFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.title.trim() || !formData.description.trim()) {
+    if (!formData.pavadinimas.trim() || !formData.tekstas.trim()) {
       setError("Užpildykite visus laukus");
       return;
     }
@@ -36,21 +54,17 @@ function TopicFormPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.post(
-        "https://localhost:7296/api/forum/topics",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      alert("Tema sėkmingai sukurta!");
-      navigate(`/forumas/${response.data.id}`);
+      if (isEditMode && id) {
+        await forumService.updateTopic(id, formData);
+        alert("Tema sėkmingai atnaujinta!");
+        navigate(`/forumas/tema/${id}`);
+      } else {
+        const response = await forumService.createTopic(formData);
+        alert("Tema sėkmingai sukurta!");
+        navigate(`/forumas/tema/${response.Id}`);
+      }
     } catch (err: any) {
-      setError(err.response?.data || "Nepavyko sukurti temos");
+      setError(err.response?.data?.message || "Nepavyko išsaugoti temos");
     } finally {
       setLoading(false);
     }
@@ -68,7 +82,7 @@ function TopicFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? "Temos redagavimo langas" : "Temos sukūrimo langas"}
+          {isEditMode ? "Temos redagavimas" : "Naujos temos kūrimas"}
         </h1>
 
         {error && (
@@ -85,24 +99,25 @@ function TopicFormPage() {
             <label className="block font-semibold mb-2">Pavadinimas *</label>
             <input
               type="text"
-              name="title"
-              value={formData.title}
+              name="pavadinimas"
+              value={formData.pavadinimas}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-lg"
               placeholder="Įveskite temos pavadinimą..."
               required
+              maxLength={255}
             />
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Aprašymas *</label>
+            <label className="block font-semibold mb-2">Tekstas *</label>
             <textarea
-              name="description"
-              value={formData.description}
+              name="tekstas"
+              value={formData.tekstas}
               onChange={handleChange}
               rows={10}
               className="w-full px-4 py-2 border rounded-lg"
-              placeholder="Parašykite temos aprašymą..."
+              placeholder="Parašykite temos turinį..."
               required
             />
           </div>
@@ -113,7 +128,7 @@ function TopicFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {isEditMode ? "Temos redagavimo langas" : "Temos sukūrimo langas"}
+              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Sukurti"}
             </button>
             <button
               type="button"

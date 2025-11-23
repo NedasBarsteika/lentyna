@@ -10,7 +10,7 @@ const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState<{ username: string; role?: string } | null>(null);
+  const [user, setUser] = useState<{ slapyvardis: string; role?: string } | null>(null);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -121,7 +121,7 @@ const Navbar: React.FC = () => {
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                    <div className="px-4 py-2 text-sm text-gray-700 font-semibold">{user?.username}</div>
+                    <div className="px-4 py-2 text-sm text-gray-700 font-semibold">{user?.slapyvardis}</div>
                     <Link to="/profilis" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profilis</Link>
                     {isAdmin && (
                       <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin puslapis</Link>

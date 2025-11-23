@@ -5,43 +5,51 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { Book } from "../../types";
-import axios from "axios";
-import { mockBooks } from "../../mockData";
+import { booksService, reviewsService } from "../../api";
 
 function ReviewFormPage() {
-  const { bookId } = useParams<{ bookId: string }>();
-  const { reviewId } = useParams<{ reviewId?: string }>();
+  const { bookId, reviewId } = useParams<{ bookId: string; reviewId?: string }>();
   const isEditMode = !!reviewId;
   const navigate = useNavigate();
 
   const [book, setBook] = useState<Book | null>(null);
   const [formData, setFormData] = useState({
-    text: "",
-    rating: 5,
+    komentaro_tekstas: "",
+    vertinimas: 5,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBook();
-  }, [bookId]);
+    if (bookId) {
+      fetchBook();
+    }
+    if (isEditMode && reviewId) {
+      fetchReview();
+    }
+  }, [bookId, reviewId]);
 
-  // Real API call - for future use
-  const fetchBookFromAPI = async () => {
-    const response = await axios.get(
-      `https://localhost:7296/api/books/${bookId}`,
-    );
-    return response.data;
-  };
-
-  // Mock data fetching - currently used
   const fetchBook = async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const foundBook = mockBooks.find((b) => b.id === bookId);
-      setBook(foundBook || null);
+      const data = await booksService.getById(bookId!);
+      setBook(data);
     } catch (err) {
       setError("Nepavyko užkrauti knygos informacijos");
+    }
+  };
+
+  const fetchReview = async () => {
+    try {
+      const reviews = await reviewsService.getByBookId(bookId!);
+      const review = reviews.find(r => r.Id === reviewId);
+      if (review) {
+        setFormData({
+          komentaro_tekstas: review.komentaro_tekstas,
+          vertinimas: review.vertinimas,
+        });
+      }
+    } catch (err) {
+      setError("Nepavyko užkrauti atsiliepimo");
     }
   };
 
@@ -51,7 +59,7 @@ function ReviewFormPage() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "rating" ? parseInt(value) : value,
+      [name]: name === "vertinimas" ? parseInt(value) : value,
     });
   };
 
@@ -59,7 +67,7 @@ function ReviewFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.text.trim()) {
+    if (!formData.komentaro_tekstas.trim()) {
       setError("Parašykite atsiliepimą");
       return;
     }
@@ -67,25 +75,23 @@ function ReviewFormPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-      await axios.post(
-        "https://localhost:7296/api/reviews",
-        {
-          bookId,
-          text: formData.text,
-          rating: formData.rating,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      alert("Atsiliepimas sėkmingai paskelbtas!");
+      if (isEditMode && reviewId) {
+        await reviewsService.update(reviewId, {
+          komentaro_tekstas: formData.komentaro_tekstas,
+          vertinimas: formData.vertinimas,
+        });
+        alert("Atsiliepimas sėkmingai atnaujintas!");
+      } else {
+        await reviewsService.create({
+          KnygaId: bookId,
+          komentaro_tekstas: formData.komentaro_tekstas,
+          vertinimas: formData.vertinimas,
+        });
+        alert("Atsiliepimas sėkmingai paskelbtas!");
+      }
       navigate(`/knygos/${bookId}`);
     } catch (err: any) {
-      setError(err.response?.data || "Nepavyko paskelbti atsiliepimo");
+      setError(err.response?.data?.message || "Nepavyko išsaugoti atsiliepimo");
     } finally {
       setLoading(false);
     }
@@ -107,7 +113,7 @@ function ReviewFormPage() {
         </h1>
         {book && (
           <p className="text-xl text-gray-600 mb-6">
-            Apie knygą: <span className="font-semibold">{book.title}</span>
+            Apie knygą: <span className="font-semibold">{book.knygos_pavadinimas}</span>
           </p>
         )}
 
@@ -126,10 +132,10 @@ function ReviewFormPage() {
             <div className="flex items-center gap-4">
               <input
                 type="range"
-                name="rating"
+                name="vertinimas"
                 min="1"
                 max="5"
-                value={formData.rating}
+                value={formData.vertinimas}
                 onChange={handleChange}
                 className="flex-grow"
               />
@@ -137,13 +143,13 @@ function ReviewFormPage() {
                 {[...Array(5)].map((_, i) => (
                   <span
                     key={i}
-                    className={`text-3xl ${i < formData.rating ? "text-yellow-500" : "text-gray-300"}`}
+                    className={`text-3xl ${i < formData.vertinimas ? "text-yellow-500" : "text-gray-300"}`}
                   >
                     ⭐
                   </span>
                 ))}
               </div>
-              <span className="text-2xl font-bold w-8">{formData.rating}</span>
+              <span className="text-2xl font-bold w-8">{formData.vertinimas}</span>
             </div>
           </div>
 
@@ -152,8 +158,8 @@ function ReviewFormPage() {
               Jūsų atsiliepimas *
             </label>
             <textarea
-              name="text"
-              value={formData.text}
+              name="komentaro_tekstas"
+              value={formData.komentaro_tekstas}
               onChange={handleChange}
               rows={10}
               className="w-full px-4 py-2 border rounded-lg"
@@ -161,7 +167,7 @@ function ReviewFormPage() {
               required
             />
             <p className="text-sm text-gray-500 mt-1">
-              Simbolių: {formData.text.length}
+              Simbolių: {formData.komentaro_tekstas.length}
             </p>
           </div>
 
@@ -171,7 +177,7 @@ function ReviewFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? "Skelbiama..." : "Paskelbti atsiliepimą"}
+              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Paskelbti atsiliepimą"}
             </button>
             <button
               type="button"

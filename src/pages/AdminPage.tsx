@@ -82,7 +82,7 @@ function AdminPage() {
   };
 
   const handleRoleChange = (userId: string) => {
-    if (userId === currentUser?.id) {
+    if (userId === currentUser?.Id) {
       alert('Negalite pakeisti savo rolės!');
       return;
     }
@@ -90,7 +90,7 @@ function AdminPage() {
     const confirmed = window.confirm('Ar tikrai norite pakeisti šio naudotojo rolę?');
     if (confirmed) {
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, role: selectedRole as any } : user
+        user.Id === userId ? { ...user, role: selectedRole as any } : user
       ));
 
       // Update in localStorage if it's the current user
@@ -110,14 +110,14 @@ function AdminPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (userId === currentUser?.id) {
+    if (userId === currentUser?.Id) {
       alert('Negalite ištrinti savo paskyros iš admin puslapio!');
       return;
     }
 
     const confirmed = window.confirm('Ar tikrai norite ištrinti šį naudotoją? Šis veiksmas negrįžtamas!');
     if (confirmed) {
-      setUsers(users.filter(user => user.id !== userId));
+      setUsers(users.filter(user => user.Id !== userId));
       alert('Naudotojas sėkmingai ištrintas!');
     }
   };
@@ -125,7 +125,7 @@ function AdminPage() {
   const handleDeleteBook = (bookId: string) => {
     const confirmed = window.confirm('Ar tikrai norite ištrinti šią knygą?');
     if (confirmed) {
-      setBooks(books.filter(book => book.id !== bookId));
+      setBooks(books.filter(book => book.Id !== bookId));
       alert('Knyga ištrinta!');
     }
   };
@@ -133,7 +133,7 @@ function AdminPage() {
   const handleDeleteAuthor = (authorId: string) => {
     const confirmed = window.confirm('Ar tikrai norite ištrinti šį autorių?');
     if (confirmed) {
-      setAuthors(authors.filter(author => author.id !== authorId));
+      setAuthors(authors.filter(author => author.Id !== authorId));
       alert('Autorius ištrintas!');
     }
   };
@@ -141,7 +141,7 @@ function AdminPage() {
   const handleDeleteTopic = (topicId: string) => {
     const confirmed = window.confirm('Ar tikrai norite ištrinti šią forumo temą?');
     if (confirmed) {
-      setTopics(topics.filter(topic => topic.id !== topicId));
+      setTopics(topics.filter(topic => topic.Id !== topicId));
       alert('Tema ištrinta!');
     }
   };
@@ -149,7 +149,7 @@ function AdminPage() {
   const handleDeleteReview = (reviewId: string) => {
     const confirmed = window.confirm('Ar tikrai norite ištrinti šį atsiliepimą?');
     if (confirmed) {
-      setReviews(reviews.filter(review => review.id !== reviewId));
+      setReviews(reviews.filter(review => review.Id !== reviewId));
       alert('Atsiliepimas ištrintas!');
     }
   };
@@ -319,13 +319,13 @@ function AdminPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
-                <tr key={user.id} className={user.id === currentUser.id ? 'bg-blue-50' : ''}>
+                <tr key={user.Id} className={user.Id === currentUser.Id ? 'bg-blue-50' : ''}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {user.username}
-                          {user.id === currentUser.id && (
+                          {user.slapyvardis}
+                          {user.Id === currentUser.Id && (
                             <span className="ml-2 text-xs text-blue-600">(Jūs)</span>
                           )}
                         </div>
@@ -333,10 +333,10 @@ function AdminPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{user.email}</div>
+                    <div className="text-sm text-gray-900">{user.el_pastas}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {editingUserId === user.id ? (
+                    {editingUserId === user.Id ? (
                       <select
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value)}
@@ -354,13 +354,13 @@ function AdminPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString('lt-LT')}
+                    {new Date(user.sukurimo_data).toLocaleDateString('lt-LT')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    {editingUserId === user.id ? (
+                    {editingUserId === user.Id ? (
                       <>
                         <button
-                          onClick={() => handleRoleChange(user.id)}
+                          onClick={() => handleRoleChange(user.Id)}
                           className="text-green-600 hover:text-green-900"
                         >
                           Išsaugoti
@@ -379,12 +379,12 @@ function AdminPage() {
                       <>
                         <button
                           onClick={() => {
-                            setEditingUserId(user.id);
+                            setEditingUserId(user.Id);
                             setSelectedRole(user.role);
                           }}
-                          disabled={user.id === currentUser.id}
+                          disabled={user.Id === currentUser.Id}
                           className={`${
-                            user.id === currentUser.id
+                            user.Id === currentUser.Id
                               ? 'text-gray-400 cursor-not-allowed'
                               : 'text-blue-600 hover:text-blue-900'
                           }`}
@@ -392,10 +392,10 @@ function AdminPage() {
                           Keisti Rolę
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={user.id === currentUser.id}
+                          onClick={() => handleDeleteUser(user.Id)}
+                          disabled={user.Id === currentUser.Id}
                           className={`${
-                            user.id === currentUser.id
+                            user.Id === currentUser.Id
                               ? 'text-gray-400 cursor-not-allowed'
                               : 'text-red-600 hover:text-red-900'
                           }`}
@@ -441,18 +441,18 @@ function AdminPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {books.slice(0, 5).map((book) => (
-                <tr key={book.id}>
-                  <td className="px-4 py-3 text-sm text-gray-900">{book.title}</td>
+                <tr key={book.Id}>
+                  <td className="px-4 py-3 text-sm text-gray-900">{book.knygos_pavadinimas}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    {book.author ? `${book.author.firstName} ${book.author.lastName}` : '-'}
+                    {book.Autorius ? `${book.Autorius.vardas} ${book.Autorius.pavarde}` : '-'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{book.publishYear}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{book.leidimo_metai}</td>
                   <td className="px-4 py-3 text-sm space-x-2">
-                    <Link to={`/knygos/${book.id}/redaguoti`} className="text-blue-600 hover:text-blue-900">
+                    <Link to={`/knygos/${book.Id}/redaguoti`} className="text-blue-600 hover:text-blue-900">
                       Redaguoti
                     </Link>
                     <button
-                      onClick={() => handleDeleteBook(book.id)}
+                      onClick={() => handleDeleteBook(book.Id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       Ištrinti
@@ -495,16 +495,16 @@ function AdminPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {authors.slice(0, 5).map((author) => (
-                <tr key={author.id}>
-                  <td className="px-4 py-3 text-sm text-gray-900">{author.firstName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{author.lastName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{author.books?.length || 0}</td>
+                <tr key={author.Id}>
+                  <td className="px-4 py-3 text-sm text-gray-900">{author.vardas}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{author.pavarde}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{author.knygu_skaicius || 0}</td>
                   <td className="px-4 py-3 text-sm space-x-2">
-                    <Link to={`/autoriai/${author.id}/redaguoti`} className="text-blue-600 hover:text-blue-900">
+                    <Link to={`/autoriai/${author.Id}/redaguoti`} className="text-blue-600 hover:text-blue-900">
                       Redaguoti
                     </Link>
                     <button
-                      onClick={() => handleDeleteAuthor(author.id)}
+                      onClick={() => handleDeleteAuthor(author.Id)}
                       className="text-red-600 hover:text-red-900"
                     >
                       Ištrinti
@@ -537,17 +537,17 @@ function AdminPage() {
         </div>
         <div className="space-y-2">
           {topics.slice(0, 5).map((topic) => (
-            <div key={topic.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
+            <div key={topic.Id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
               <div className="flex-1">
-                <Link to={`/forumas/${topic.id}`} className="text-blue-600 hover:text-blue-900 font-medium">
-                  {topic.title}
+                <Link to={`/forumas/${topic.Id}`} className="text-blue-600 hover:text-blue-900 font-medium">
+                  {topic.pavadinimas}
                 </Link>
-                {topic.isPinned && (
+                {topic.prikabinta && (
                   <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Prikabinta</span>
                 )}
               </div>
               <button
-                onClick={() => handleDeleteTopic(topic.id)}
+                onClick={() => handleDeleteTopic(topic.Id)}
                 className="text-red-600 hover:text-red-900 text-sm"
               >
                 Ištrinti
@@ -562,19 +562,19 @@ function AdminPage() {
         <h3 className="text-xl font-semibold mb-4">Naujausi Komentarai ({reviews.length})</h3>
         <div className="space-y-2">
           {reviews.slice(0, 5).map((review) => (
-            <div key={review.id} className="flex justify-between items-start p-3 border rounded hover:bg-gray-50">
+            <div key={review.Id} className="flex justify-between items-start p-3 border rounded hover:bg-gray-50">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm">{review.user?.username || 'Nežinomas'}</span>
-                  <span className="text-yellow-500">{'⭐'.repeat(review.rating)}</span>
-                  {review.isAiGenerated && (
+                  <span className="font-medium text-sm">{review.Naudotojas?.slapyvardis || 'Nežinomas'}</span>
+                  <span className="text-yellow-500">{'⭐'.repeat(review.vertinimas)}</span>
+                  {!review.NaudotojasId && (
                     <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">DI</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{review.text}</p>
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{review.komentaro_tekstas}</p>
               </div>
               <button
-                onClick={() => handleDeleteReview(review.id)}
+                onClick={() => handleDeleteReview(review.Id)}
                 className="text-red-600 hover:text-red-900 text-sm ml-4"
               >
                 Ištrinti
@@ -679,7 +679,7 @@ function AdminPage() {
               <span className="text-red-600">⚙️</span>
               Administratoriaus Pultas
             </h1>
-            <p className="text-gray-600 mt-1">Sveiki sugrįžę, {currentUser.username}!</p>
+            <p className="text-gray-600 mt-1">Sveiki sugrįžę, {currentUser.slapyvardis}!</p>
           </div>
 
           {/* Tabs */}

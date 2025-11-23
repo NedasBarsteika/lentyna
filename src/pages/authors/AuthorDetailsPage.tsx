@@ -4,57 +4,43 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
-import type { Author } from '../../types';
-import axios from 'axios';
-import { mockAuthors } from '../../mockData';
+import type { Author, Book, Citation } from '../../types';
+import { authorsService, followingService, citationsService } from '../../api';
+import { UserRole } from '../../types';
 
 function AuthorDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [author, setAuthor] = useState<Author | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [citations, setCitations] = useState<Citation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     setIsAuthenticated(!!token);
-    setIsEditor(user.role === 'editor' || user.role === 'admin');
+    setIsEditor(user.role === UserRole.EDITOR || user.role === UserRole.ADMIN);
 
-    fetchAuthorDetails();
-    if (token) {
-      checkFavoriteStatus();
+    if (id) {
+      fetchAuthorDetails();
+      fetchAuthorBooks();
+      fetchAuthorCitations();
+      if (token) {
+        checkFollowingStatus();
+      }
     }
   }, [id]);
 
-  // Real API calls - for future use
-  const fetchAuthorDetailsFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/authors/${id}`);
-    return response.data;
-  };
-
-  const checkFavoriteStatusFromAPI = async () => {
-    const response = await axios.get(`https://localhost:7296/api/favorite-authors/check/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('authToken')}`
-      }
-    });
-    return response.data.isFavorite;
-  };
-
-  // Mock data fetching - currently used
   const fetchAuthorDetails = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const foundAuthor = mockAuthors.find(a => a.id === id);
-      setAuthor(foundAuthor || null);
-      if (!foundAuthor) {
-        setError('Autorius nerastas');
-      }
+      const data = await authorsService.getById(id!);
+      setAuthor(data);
     } catch (err) {
       setError('Nepavyko užkrauti autoriaus informacijos');
       console.error(err);
@@ -63,50 +49,53 @@ function AuthorDetailsPage() {
     }
   };
 
-  const checkFavoriteStatus = async () => {
+  const fetchAuthorBooks = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      // Mock - randomly set favorite status
-      setIsFavorite(Math.random() > 0.5);
+      const data = await authorsService.getAuthorBooks(id!);
+      setBooks(data);
     } catch (err) {
-      console.error('Failed to check favorite status', err);
+      console.error('Failed to fetch author books', err);
     }
   };
 
-  const toggleFavorite = async () => {
+  const fetchAuthorCitations = async () => {
     try {
-      if (isFavorite) {
-        await axios.delete(`https://localhost:7296/api/favorite-authors/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
-        setIsFavorite(false);
-        alert('Autorius pašalintas iš mėgstamų');
+      const data = await citationsService.getByAuthorId(id!);
+      setCitations(data);
+    } catch (err) {
+      console.error('Failed to fetch citations', err);
+    }
+  };
+
+  const checkFollowingStatus = async () => {
+    try {
+      const result = await followingService.isFollowing(id!);
+      setIsFollowing(result);
+    } catch (err) {
+      console.error('Failed to check following status', err);
+    }
+  };
+
+  const toggleFollowing = async () => {
+    try {
+      if (isFollowing) {
+        await followingService.unfollow(id!);
+        setIsFollowing(false);
+        alert('Autorius pašalintas iš sekamų');
       } else {
-        await axios.post(`https://localhost:7296/api/favorite-authors`, {
-          authorId: id
-        }, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
-        setIsFavorite(true);
-        alert('Autorius pridėtas į mėgstamus! Gausite pranešimus apie naujas knygas.');
+        await followingService.follow({ AutoriusId: id! });
+        setIsFollowing(true);
+        alert('Autorius pridėtas į sekamus! Gausite pranešimus apie naujas knygas.');
       }
     } catch (err) {
-      alert('Nepavyko atnaujinti mėgstamų sąrašo');
+      alert('Nepavyko atnaujinti sekamų sąrašo');
     }
   };
 
   const handleDelete = async () => {
     if (window.confirm('Ar tikrai norite ištrinti šį autorių?')) {
       try {
-        await axios.delete(`https://localhost:7296/api/authors/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
+        await authorsService.delete(id!);
         navigate('/autoriai');
       } catch (err) {
         alert('Nepavyko ištrinti autoriaus');
@@ -154,10 +143,10 @@ function AuthorDetailsPage() {
             {/* Author Photo */}
             <div className="md:w-1/3">
               <div className="w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                {author.photoUrl ? (
+                {author.nuotrauka ? (
                   <img
-                    src={author.photoUrl}
-                    alt={`${author.firstName} ${author.lastName}`}
+                    src={author.nuotrauka}
+                    alt={`${author.vardas} ${author.pavarde}`}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -165,17 +154,17 @@ function AuthorDetailsPage() {
                 )}
               </div>
 
-              {/* Favorite Button */}
+              {/* Follow Button */}
               {isAuthenticated && (
                 <button
-                  onClick={toggleFavorite}
+                  onClick={toggleFollowing}
                   className={`w-full mt-4 px-4 py-2 rounded-lg font-semibold ${
-                    isFavorite
+                    isFollowing
                       ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'bg-yellow-600 text-white hover:bg-yellow-700'
                   }`}
                 >
-                  {isFavorite ? '❤️ Mėgstamas autorius' : '🤍 Pridėti į mėgstamus'}
+                  {isFollowing ? '❤️ Sekamas autorius' : '🤍 Sekti autorių'}
                 </button>
               )}
             </div>
@@ -183,7 +172,7 @@ function AuthorDetailsPage() {
             {/* Author Info */}
             <div className="md:w-2/3">
               <div className="flex justify-between items-start mb-4">
-                <h1 className="text-4xl font-bold">{author.firstName} {author.lastName}</h1>
+                <h1 className="text-4xl font-bold">{author.vardas} {author.pavarde}</h1>
                 {isEditor && (
                   <div className="flex gap-2">
                     <Link
@@ -202,30 +191,63 @@ function AuthorDetailsPage() {
                 )}
               </div>
 
+              {author.tautybe && (
+                <p className="text-gray-600 mb-2">Tautybė: {author.tautybe}</p>
+              )}
+
+              {author.gimimo_metai && (
+                <p className="text-gray-600 mb-2">
+                  Gimimo data: {new Date(author.gimimo_metai).toLocaleDateString('lt-LT')}
+                  {author.mirties_data && ` - ${new Date(author.mirties_data).toLocaleDateString('lt-LT')}`}
+                </p>
+              )}
+
               <div className="mb-6">
                 <h3 className="text-xl font-semibold mb-3">Biografija</h3>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">{author.biography}</p>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {author.curiculum_vitae || 'Biografija nepateikta'}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Citations */}
+        {citations.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-6">Citatos</h2>
+            <div className="space-y-4">
+              {citations.map((citation) => (
+                <blockquote
+                  key={citation.Id}
+                  className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-600"
+                >
+                  <p className="text-lg italic text-gray-700">"{citation.citatos_tekstas}"</p>
+                  {citation.citatos_saltinis && (
+                    <cite className="text-sm text-gray-500 mt-2 block">— {citation.citatos_saltinis}</cite>
+                  )}
+                </blockquote>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Author's Books */}
         <div>
           <h2 className="text-3xl font-bold mb-6">Autoriaus knygos</h2>
-          {author.books && author.books.length > 0 ? (
+          {books.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {author.books.map((book) => (
+              {books.map((book) => (
                 <Link
-                  key={book.id}
-                  to={`/knygos/${book.id}`}
+                  key={book.Id}
+                  to={`/knygos/${book.Id}`}
                   className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
                 >
                   <div className="h-64 bg-gray-200 flex items-center justify-center">
-                    {book.coverImageUrl ? (
+                    {book.virselio_nuotrauka ? (
                       <img
-                        src={book.coverImageUrl}
-                        alt={book.title}
+                        src={book.virselio_nuotrauka}
+                        alt={book.knygos_pavadinimas}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -233,12 +255,14 @@ function AuthorDetailsPage() {
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2">{book.title}</h3>
-                    <p className="text-gray-600 mb-2">{book.publishYear}</p>
-                    {book.averageRating && (
+                    <h3 className="text-xl font-bold mb-2">{book.knygos_pavadinimas}</h3>
+                    <p className="text-gray-600 mb-2">
+                      {book.leidimo_metai ? new Date(book.leidimo_metai).getFullYear() : 'Nežinoma'}
+                    </p>
+                    {book.vidutinis_vertinimas !== undefined && book.vidutinis_vertinimas > 0 && (
                       <div className="flex items-center">
                         <span className="text-yellow-500 mr-1">⭐</span>
-                        <span className="font-semibold">{book.averageRating.toFixed(1)}</span>
+                        <span className="font-semibold">{book.vidutinis_vertinimas.toFixed(1)}</span>
                       </div>
                     )}
                   </div>

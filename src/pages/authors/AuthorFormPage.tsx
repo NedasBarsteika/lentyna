@@ -4,8 +4,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { authorsService, uploadsService } from "../../api";
 import ImageUpload from "../../components/ImageUpload";
-import axios from "axios";
 
 function AuthorFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -13,34 +13,37 @@ function AuthorFormPage() {
   const isEditMode = !!id;
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    biography: "",
+    vardas: "",
+    pavarde: "",
+    gimimo_metai: "",
+    mirties_data: "",
+    curiculum_vitae: "",
+    nuotrauka: "",
+    tautybe: "",
   });
 
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string>("");
+  const [authorImage, setAuthorImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode && id) {
       fetchAuthor();
     }
   }, [id]);
 
   const fetchAuthor = async () => {
     try {
-      const response = await axios.get(
-        `https://localhost:7296/api/authors/${id}`,
-      );
-      const author = response.data;
+      const author = await authorsService.getById(id!);
       setFormData({
-        firstName: author.firstName,
-        lastName: author.lastName,
-        biography: author.biography,
+        vardas: author.vardas,
+        pavarde: author.pavarde,
+        gimimo_metai: author.gimimo_metai || "",
+        mirties_data: author.mirties_data || "",
+        curiculum_vitae: author.curiculum_vitae || "",
+        nuotrauka: author.nuotrauka || "",
+        tautybe: author.tautybe || "",
       });
-      setCurrentPhotoUrl(author.photoUrl || "");
     } catch (err) {
       setError("Nepavyko užkrauti autoriaus informacijos");
     }
@@ -56,7 +59,7 @@ function AuthorFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.firstName || !formData.lastName || !formData.biography) {
+    if (!formData.vardas || !formData.pavarde) {
       setError("Užpildykite visus privalomus laukus");
       return;
     }
@@ -64,45 +67,33 @@ function AuthorFormPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-
-      // Create FormData for multipart upload
-      const submitData = new FormData();
-      submitData.append("firstName", formData.firstName);
-      submitData.append("lastName", formData.lastName);
-      submitData.append("biography", formData.biography);
-
-      // Append photo file if a new one was uploaded
-      if (photo) {
-        submitData.append("photo", photo);
+      // Įkelti nuotrauką, jei pasirinkta nauja
+      let imageUrl = formData.nuotrauka;
+      if (authorImage) {
+        imageUrl = await uploadsService.uploadAuthorPhoto(authorImage);
       }
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      const authorData = {
+        vardas: formData.vardas,
+        pavarde: formData.pavarde,
+        gimimo_metai: formData.gimimo_metai || undefined,
+        mirties_data: formData.mirties_data || undefined,
+        curiculum_vitae: formData.curiculum_vitae || undefined,
+        nuotrauka: imageUrl || undefined,
+        tautybe: formData.tautybe || undefined,
       };
 
-      if (isEditMode) {
-        await axios.put(
-          `https://localhost:7296/api/authors/${id}`,
-          submitData,
-          config,
-        );
+      if (isEditMode && id) {
+        await authorsService.update(id, authorData);
         alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
-        const response = await axios.post(
-          "https://localhost:7296/api/authors",
-          submitData,
-          config,
-        );
+        const response = await authorsService.create(authorData);
         alert("Autorius sėkmingai sukurtas!");
-        navigate(`/autoriai/${response.data.id}`);
+        navigate(`/autoriai/${response.Id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data || "Nepavyko išsaugoti autoriaus");
+      setError(err.response?.data?.message || "Nepavyko išsaugoti autoriaus");
     } finally {
       setLoading(false);
     }
@@ -138,11 +129,12 @@ function AuthorFormPage() {
               <label className="block font-semibold mb-2">Vardas *</label>
               <input
                 type="text"
-                name="firstName"
-                value={formData.firstName}
+                name="vardas"
+                value={formData.vardas}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg"
                 required
+                maxLength={100}
               />
             </div>
 
@@ -150,34 +142,70 @@ function AuthorFormPage() {
               <label className="block font-semibold mb-2">Pavardė *</label>
               <input
                 type="text"
-                name="lastName"
-                value={formData.lastName}
+                name="pavarde"
+                value={formData.pavarde}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-lg"
                 required
+                maxLength={100}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-semibold mb-2">Gimimo data</label>
+              <input
+                type="date"
+                name="gimimo_metai"
+                value={formData.gimimo_metai}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Mirties data</label>
+              <input
+                type="date"
+                name="mirties_data"
+                value={formData.mirties_data}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Biografija *</label>
+            <label className="block font-semibold mb-2">Tautybė</label>
+            <input
+              type="text"
+              name="tautybe"
+              value={formData.tautybe}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded-lg"
+              maxLength={100}
+              placeholder="pvz. Lietuvis"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-2">Biografija</label>
             <textarea
-              name="biography"
-              value={formData.biography}
+              name="curiculum_vitae"
+              value={formData.curiculum_vitae}
               onChange={handleChange}
               rows={10}
               className="w-full px-4 py-2 border rounded-lg"
               placeholder="Parašykite autoriaus biografiją..."
-              required
             />
           </div>
 
           <ImageUpload
-            value={photo}
-            onChange={setPhoto}
-            currentImageUrl={currentPhotoUrl}
+            value={authorImage}
+            onChange={setAuthorImage}
+            currentImageUrl={formData.nuotrauka}
             label="Autoriaus nuotrauka"
-            maxSizeMB={5}
           />
 
           <div className="flex gap-4">

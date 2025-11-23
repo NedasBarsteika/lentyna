@@ -6,8 +6,8 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { MultiSelect } from '../../components/MultiSelect';
 import type { Book, BookSearchDto, Genre, Mood } from '../../types';
-import axios from 'axios';
-import { mockBooks, mockGenres, mockMoods } from '../../mockData';
+import { booksService, genresService, moodsService } from '../../api';
+import { UserRole } from '../../types';
 
 function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -16,77 +16,50 @@ function BooksPage() {
   const [isEditor, setIsEditor] = useState(false);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [moods, setMoods] = useState<Mood[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [searchFilters, setSearchFilters] = useState<BookSearchDto>({
-    scenarioDescription: '',
-    genreIds: [],
-    moodIds: []
+    ScenarijausAprasymas: '',
+    ZanruIds: [],
+    NuotaikuIds: []
   });
+
+  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setIsEditor(user.role === 'editor' || user.role === 'admin');
+    setIsEditor(user.role === UserRole.EDITOR || user.role === UserRole.ADMIN);
 
-    // Load genres and moods
-    setGenres(mockGenres);
-    setMoods(mockMoods);
-
-    fetchBooks();
+    loadInitialData();
   }, []);
 
-  // Real API call - Backend uses OpenAI GPT-4o mini for scenario-based search
-  const fetchBooksFromAPI = async () => {
-    const response = await axios.get('https://localhost:7296/api/books', {
-      params: {
-        ...searchFilters,
-        // Backend will process scenarioDescription with AI to match books
-        // Genres and moods are applied as strict AND filters
-      }
-    });
-    return response.data;
-  };
-
-  // Mock data fetch - currently used
-  const fetchBooksFromMock = () => {
-    let filtered = [...mockBooks];
-
-    // Filter by scenario description (simple text search in title and description)
-    // In production, this would be handled by AI on the backend
-    if (searchFilters.scenarioDescription && searchFilters.scenarioDescription.trim()) {
-      const searchTerm = searchFilters.scenarioDescription.toLowerCase();
-      filtered = filtered.filter(book =>
-        book.title.toLowerCase().includes(searchTerm) ||
-        book.description.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    // Filter by genres (OR logic - book can have ANY selected genre)
-    if (searchFilters.genreIds && searchFilters.genreIds.length > 0) {
-      filtered = filtered.filter(book =>
-        searchFilters.genreIds!.includes(book.genreId)
-      );
-    }
-
-    // Filter by moods (OR logic - book's genre must have ANY selected mood)
-    if (searchFilters.moodIds && searchFilters.moodIds.length > 0) {
-      filtered = filtered.filter(book => {
-        const bookGenre = mockGenres.find(g => g.id === book.genreId);
-        if (!bookGenre) return false;
-        // Check if genre has any of the selected moods
-        return searchFilters.moodIds!.some(moodId => bookGenre.moodIds.includes(moodId));
-      });
-    }
-
-    return filtered;
-  };
-
-  const fetchBooks = async () => {
-    setLoading(true);
+  const loadInitialData = async () => {
     try {
-      // Use mock data for now - switch to fetchBooksFromAPI() when backend is ready
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
-      const data = fetchBooksFromMock();
-      setBooks(data);
+      const [genresData, moodsData] = await Promise.all([
+        genresService.getAll(),
+        moodsService.getAll()
+      ]);
+      setGenres(genresData);
+      setMoods(moodsData);
+      await fetchBooks();
+    } catch (err) {
+      console.error('Klaida kraunant pradinius duomenis:', err);
+      setError('Nepavyko užkrauti duomenų');
+      setLoading(false);
+    }
+  };
+
+  const fetchBooks = async (pageNum: number = 1) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await booksService.getAll({ page: pageNum, pageSize: 12 });
+      setBooks(response.items);
+      setTotalCount(response.totalCount);
+      setTotalPages(response.totalPages);
+      setPage(response.page);
     } catch (err: any) {
       setError('Nepavyko užkrauti knygų');
       console.error(err);
@@ -95,9 +68,41 @@ function BooksPage() {
     }
   };
 
+  const handleAdvancedSearch = async () => {
+    setLoading(true);
+    setError(null);
+    setIsAdvancedSearch(true);
+    try {
+      const results = await booksService.advancedSearch(searchFilters);
+      setBooks(results);
+      setTotalCount(results.length);
+      setTotalPages(1);
+      setPage(1);
+    } catch (err: any) {
+      setError('Nepavyko atlikti paieškos');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchBooks();
+    // Check if any advanced filters are set
+    if (searchFilters.ScenarijausAprasymas ||
+        (searchFilters.ZanruIds && searchFilters.ZanruIds.length > 0) ||
+        (searchFilters.NuotaikuIds && searchFilters.NuotaikuIds.length > 0)) {
+      handleAdvancedSearch();
+    } else {
+      setIsAdvancedSearch(false);
+      fetchBooks(1);
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchFilters({ ScenarijausAprasymas: '', ZanruIds: [], NuotaikuIds: [] });
+    setIsAdvancedSearch(false);
+    fetchBooks(1);
   };
 
   return (
@@ -141,8 +146,8 @@ function BooksPage() {
               </label>
               <textarea
                 placeholder="Pvz: 'Noriu knygos apie stiprią moterį kovoje už laisvę karo metu' arba 'Ieškau romantiškos istorijos su giliu filosofiniu pagrindu'..."
-                value={searchFilters.scenarioDescription}
-                onChange={(e) => setSearchFilters({ ...searchFilters, scenarioDescription: e.target.value })}
+                value={searchFilters.ScenarijausAprasymas}
+                onChange={(e) => setSearchFilters({ ...searchFilters, ScenarijausAprasymas: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
               />
@@ -154,18 +159,18 @@ function BooksPage() {
               <MultiSelect
                 label="Žanrai"
                 placeholder="Pasirinkite žanrus..."
-                options={genres.map(genre => ({ value: genre.id, label: genre.pavadinimas }))}
-                value={searchFilters.genreIds || []}
-                onChange={(selected) => setSearchFilters({ ...searchFilters, genreIds: selected })}
+                options={genres.map(genre => ({ value: genre.Id, label: genre.pavadinimas }))}
+                value={searchFilters.ZanruIds || []}
+                onChange={(selected) => setSearchFilters({ ...searchFilters, ZanruIds: selected })}
               />
 
               {/* Moods Multi-select */}
               <MultiSelect
                 label="Nuotaikos"
                 placeholder="Pasirinkite nuotaikas..."
-                options={moods.map(mood => ({ value: mood.id, label: mood.pavadinimas }))}
-                value={searchFilters.moodIds || []}
-                onChange={(selected) => setSearchFilters({ ...searchFilters, moodIds: selected })}
+                options={moods.map(mood => ({ value: mood.Id, label: mood.pavadinimas }))}
+                value={searchFilters.NuotaikuIds || []}
+                onChange={(selected) => setSearchFilters({ ...searchFilters, NuotaikuIds: selected })}
               />
             </div>
 
@@ -175,55 +180,50 @@ function BooksPage() {
                 type="submit"
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                🔍 Ieškoti Knygų
+                Ieškoti Knygų
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setSearchFilters({ scenarioDescription: '', genreIds: [], moodIds: [] });
-                  // Trigger search with empty filters
-                  setTimeout(() => fetchBooks(), 0);
-                }}
+                onClick={clearFilters}
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
-                ✕ Išvalyti
+                Išvalyti
               </button>
             </div>
           </div>
         </form>
 
         {/* Active Filters Display */}
-        {(searchFilters.scenarioDescription ||
-          (searchFilters.genreIds && searchFilters.genreIds.length > 0) ||
-          (searchFilters.moodIds && searchFilters.moodIds.length > 0)) && (
+        {(searchFilters.ScenarijausAprasymas ||
+          (searchFilters.ZanruIds && searchFilters.ZanruIds.length > 0) ||
+          (searchFilters.NuotaikuIds && searchFilters.NuotaikuIds.length > 0)) && (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start justify-between">
               <div className="flex-grow">
                 <h3 className="text-sm font-semibold text-blue-900 mb-2">Aktyvūs Filtrai:</h3>
                 <div className="flex flex-wrap gap-2">
                   {/* Scenario Description Chip */}
-                  {searchFilters.scenarioDescription && (
+                  {searchFilters.ScenarijausAprasymas && (
                     <span className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
                       <span className="font-medium">Scenarijus:</span>
                       <span className="max-w-xs truncate">
-                        "{searchFilters.scenarioDescription}"
+                        "{searchFilters.ScenarijausAprasymas}"
                       </span>
                       <button
                         type="button"
                         onClick={() => {
-                          setSearchFilters({ ...searchFilters, scenarioDescription: '' });
-                          setTimeout(() => fetchBooks(), 0);
+                          setSearchFilters({ ...searchFilters, ScenarijausAprasymas: '' });
                         }}
                         className="hover:text-purple-600 transition-colors ml-1"
                       >
-                        ✕
+                        x
                       </button>
                     </span>
                   )}
 
                   {/* Genre Chips */}
-                  {searchFilters.genreIds?.map((genreId) => {
-                    const genreName = genres.find(g => g.id === genreId)?.pavadinimas || genreId;
+                  {searchFilters.ZanruIds?.map((genreId) => {
+                    const genreName = genres.find(g => g.Id === genreId)?.pavadinimas || genreId;
                     return (
                       <span
                         key={genreId}
@@ -233,21 +233,20 @@ function BooksPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const newGenreIds = searchFilters.genreIds!.filter(g => g !== genreId);
-                            setSearchFilters({ ...searchFilters, genreIds: newGenreIds });
-                            setTimeout(() => fetchBooks(), 0);
+                            const newGenreIds = searchFilters.ZanruIds!.filter(g => g !== genreId);
+                            setSearchFilters({ ...searchFilters, ZanruIds: newGenreIds });
                           }}
                           className="hover:text-green-600 transition-colors"
                         >
-                          ✕
+                          x
                         </button>
                       </span>
                     );
                   })}
 
                   {/* Mood Chips */}
-                  {searchFilters.moodIds?.map((moodId) => {
-                    const moodName = moods.find(m => m.id === moodId)?.pavadinimas || moodId;
+                  {searchFilters.NuotaikuIds?.map((moodId) => {
+                    const moodName = moods.find(m => m.Id === moodId)?.pavadinimas || moodId;
                     return (
                       <span
                         key={moodId}
@@ -257,13 +256,12 @@ function BooksPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            const newMoodIds = searchFilters.moodIds!.filter(m => m !== moodId);
-                            setSearchFilters({ ...searchFilters, moodIds: newMoodIds });
-                            setTimeout(() => fetchBooks(), 0);
+                            const newMoodIds = searchFilters.NuotaikuIds!.filter(m => m !== moodId);
+                            setSearchFilters({ ...searchFilters, NuotaikuIds: newMoodIds });
                           }}
                           className="hover:text-amber-600 transition-colors"
                         >
-                          ✕
+                          x
                         </button>
                       </span>
                     );
@@ -274,10 +272,7 @@ function BooksPage() {
               {/* Clear All Filters Button */}
               <button
                 type="button"
-                onClick={() => {
-                  setSearchFilters({ scenarioDescription: '', genreIds: [], moodIds: [] });
-                  setTimeout(() => fetchBooks(), 0);
-                }}
+                onClick={clearFilters}
                 className="ml-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium whitespace-nowrap"
               >
                 Išvalyti visus
@@ -287,7 +282,7 @@ function BooksPage() {
             {/* Results Count */}
             {!loading && (
               <p className="text-sm text-gray-600 mt-3">
-                Rasta <span className="font-semibold text-blue-700">{books.length}</span> {books.length === 1 ? 'knyga' : books.length < 10 ? 'knygos' : 'knygų'}
+                Rasta <span className="font-semibold text-blue-700">{totalCount}</span> {totalCount === 1 ? 'knyga' : totalCount < 10 ? 'knygos' : 'knygų'}
               </p>
             )}
           </div>
@@ -298,8 +293,8 @@ function BooksPage() {
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-xl text-gray-600">
-              {searchFilters.scenarioDescription
-                ? '🤖 Dirbtinis intelektas analizuoja jūsų scenarijų...'
+              {searchFilters.ScenarijausAprasymas
+                ? 'Dirbtinis intelektas analizuoja jūsų scenarijų...'
                 : 'Kraunama...'}
             </p>
           </div>
@@ -312,49 +307,76 @@ function BooksPage() {
             <p className="text-xl text-gray-600">Knygų nerasta</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {books.map((book) => (
-              <Link
-                key={book.id}
-                to={`/knygos/${book.id}`}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
-              >
-                <div className="h-64 bg-gray-200 flex items-center justify-center">
-                  {book.coverImageUrl ? (
-                    <img
-                      src={book.coverImageUrl}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-6xl">📚</span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-bold mb-2">{book.title}</h3>
-                  <p className="text-gray-600 mb-2">{book.author?.firstName} {book.author?.lastName}</p>
-                  <p className="text-gray-500 text-sm mb-2">{book.publishYear}</p>
-                  <div className="mb-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                      {book.genre?.pavadinimas || 'Nežinomas žanras'}
-                    </span>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {books?.map((book) => (
+                <Link
+                  key={book?.Id}
+                  to={`/knygos/${book?.Id}`}
+                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
+                >
+                  <div className="h-64 bg-gray-200 flex items-center justify-center">
+                    {book?.virselio_nuotrauka ? (
+                      <img
+                        src={book?.virselio_nuotrauka}
+                        alt={book?.knygos_pavadinimas}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-6xl">📚</span>
+                    )}
                   </div>
-                  {book.genre?.moods && book.genre.moods.length > 0 && (
-                    <p className="text-gray-500 text-xs mb-2">
-                      Nuotaikos: {book.genre.moods.map(m => m.pavadinimas).join(', ')}
+                  <div className="p-4">
+                    <h3 className="text-xl font-bold mb-2">{book?.knygos_pavadinimas}</h3>
+                    <p className="text-gray-600 mb-2">{book?.autorius_vardas}</p>
+                    <p className="text-gray-500 text-sm mb-2">
+                      {book?.leidimo_metai ? new Date(book?.leidimo_metai).getFullYear() : 'Nežinoma'}
                     </p>
-                  )}
-                  {book.averageRating && (
-                    <div className="flex items-center">
-                      <span className="text-yellow-500 mr-1">⭐</span>
-                      <span className="font-semibold">{book.averageRating.toFixed(1)}</span>
-                      <span className="text-gray-500 text-sm ml-2">({book.reviewCount} komentarai)</span>
+                    <div className="mb-2">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        {book?.Zanras?.pavadinimas || 'Nežinomas žanras'}
+                      </span>
+                      {book?.bestseleris && (
+                        <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
+                          Bestseleris
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
+                    {book?.vidutinis_vertinimas !== undefined && book?.vidutinis_vertinimas > 0 && (
+                      <div className="flex items-center">
+                        <span className="text-yellow-500 mr-1">⭐</span>
+                        <span className="font-semibold">{book?.vidutinis_vertinimas.toFixed(1)}</span>
+                        <span className="text-gray-500 text-sm ml-2">({book?.komentaru_skaicius} komentarai)</span>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {!isAdvancedSearch && totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                <button
+                  onClick={() => fetchBooks(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Ankstesnis
+                </button>
+                <span className="px-4 py-2">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => fetchBooks(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300"
+                >
+                  Kitas
+                </button>
+              </div>
+            )}
+          </>
         )}
       </motion.div>
 

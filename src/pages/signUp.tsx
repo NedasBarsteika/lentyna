@@ -4,22 +4,21 @@ import "../App.css";
 import NavbarOnlyLogo from "../components/NavbarOnlyLogo";
 import Footer from "../components/Footer";
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { mockRegister } from "../mockData";
+import { authService } from "../api";
 
 function SignUpPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
+    slapyvardis: "",
+    el_pastas: "",
+    slaptazodis: "",
     confirmPassword: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,48 +30,50 @@ function SignUpPage() {
 
     // Validation
     if (
-      !formData.username ||
-      !formData.email ||
-      !formData.password ||
+      !formData.slapyvardis ||
+      !formData.el_pastas ||
+      !formData.slaptazodis ||
       !formData.confirmPassword
     ) {
       setError("Įveskite visus duomenis");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.slaptazodis !== formData.confirmPassword) {
       setError("Slaptažodžiai skiriasi!");
+      return;
+    }
+
+    if (formData.slaptazodis.length < 6) {
+      setError("Slaptažodis turi būti bent 6 simbolių");
       return;
     }
 
     setLoading(true);
 
-    // Try backend first, fallback to mock data
     try {
-      const response = await axios.post("https://localhost:7296/user/register", {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
+      const response = await authService.register({
+        slapyvardis: formData.slapyvardis,
+        el_pastas: formData.el_pastas,
+        slaptazodis: formData.slaptazodis,
       });
 
-      if (response.status === 200) {
-        alert("Registracija sėkminga!");
-        navigate("/prisijungimas");
-      }
-    } catch (error: any) {
-      // If backend is not available, use mock registration
-      console.log("Backend nepasiekiamas, naudojami mock duomenys");
-      const result = mockRegister(
-        formData.username,
-        formData.email,
-        formData.password
-      );
+      // Auto-login after successful registration
+      const token = response.token;
+      const user = response.naudotojas;
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
 
-      if (result.success) {
-        alert("Registracija sėkminga! (mock duomenys)");
-        navigate("/prisijungimas");
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      console.error("Registracijos klaida:", err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        setError("El. paštas arba slapyvardis jau užimtas");
       } else {
-        setError(result.error);
+        setError("Įvyko klaida registruojantis. Bandykite dar kartą.");
       }
     }
 
@@ -103,28 +104,29 @@ function SignUpPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
-                name="username"
+                name="slapyvardis"
                 placeholder="Slapyvardis"
-                value={formData.username}
+                value={formData.slapyvardis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
                 minLength={3}
+                maxLength={100}
               />
               <input
                 type="email"
-                name="email"
+                name="el_pastas"
                 placeholder="El. paštas"
-                value={formData.email}
+                value={formData.el_pastas}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
                 type="password"
-                name="password"
+                name="slaptazodis"
                 placeholder="Slaptažodis"
-                value={formData.password}
+                value={formData.slaptazodis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
