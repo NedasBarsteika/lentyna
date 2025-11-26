@@ -117,6 +117,7 @@ export interface Book {
   Zanras?: Genre;
   Autorius?: Author;
   zanrasObj?: Genre;
+  di_komentaras?: AIComment;
 }
 
 export interface BookCreateDto {
@@ -175,6 +176,14 @@ export interface ReviewCreateDto {
 export interface ReviewUpdateDto {
   komentaro_tekstas?: string;
   vertinimas?: number;
+}
+
+// AI Generated Comment (DI komentaras)
+export interface AIComment {
+  Id: string;
+  modelis: string;
+  sugeneravimo_data: string;
+  tekstas: string;
 }
 
 // AI Generated Review

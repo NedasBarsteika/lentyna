@@ -271,10 +271,31 @@ function BookDetailsPage() {
             )}
           </div>
 
-          {reviews.length === 0 ? (
+          {reviews.length === 0 && !book?.di_komentaras ? (
             <p className="text-gray-600">Atsiliepimų dar nėra</p>
           ) : (
             <div className="space-y-4">
+              {/* AI Generated Comment */}
+              {book?.di_komentaras && (
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-4">
+                      <span className="font-semibold text-purple-700 flex items-center gap-2">
+                        🤖 DI sugeneruotas komentaras
+                      </span>
+                      <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full">
+                        {book.di_komentaras.modelis}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(book.di_komentaras.sugeneravimo_data).toLocaleDateString('lt-LT')}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{book.di_komentaras.tekstas}</p>
+                </div>
+              )}
+
+              {/* User Reviews */}
               {reviews.map((review) => (
                 <div
                   key={review.Id}
