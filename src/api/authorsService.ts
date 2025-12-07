@@ -1,7 +1,7 @@
 // src/api/authorsService.ts
 import { api } from './config';
 import type { PaginatedResponse } from './config';
-import type { Author, AuthorCreateDto, AuthorUpdateDto, Book, Citation } from '../types';
+import type { Author, AuthorCreateDto, AuthorUpdateDto, Book, Citation, CitationCreateDto } from '../types';
 
 export interface AuthorsQueryParams {
   page?: number;
@@ -49,4 +49,17 @@ export const authorsService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/autoriai/${id}`);
   },
+
+  // POST /api/citatos (editor/admin)
+  createcitata: async (data: CitationCreateDto): Promise<Citation> => {
+    const response = await api.post<Citation>('/autoriai/citatos', data);
+    return response.data;
+  },
+
+  // DELETE /api/citatos/{id} (editor/admin)
+  deletecitata: async (id: string): Promise<void> => {
+    await api.delete(`/autoriai/citatos/${id}`);
+  },
+
+
 };

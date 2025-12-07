@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import type { Author, Book, Citation } from '../../types';
-import { authorsService, followingService, citationsService } from '../../api';
+import { authorsService, followingService } from '../../api';
 import { UserRole } from '../../types';
 
 function AuthorDetailsPage() {
@@ -60,7 +60,7 @@ function AuthorDetailsPage() {
 
   const fetchAuthorCitations = async () => {
     try {
-      const data = await citationsService.getByAuthorId(id!);
+      const data = await authorsService.getAuthorCitations(id!);
       setCitations(data);
     } catch (err) {
       console.error('Failed to fetch citations', err);
