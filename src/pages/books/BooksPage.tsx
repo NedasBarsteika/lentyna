@@ -246,13 +246,18 @@ function BooksPage() {
 
                   {/* Mood Chips */}
                   {searchFilters.NuotaikuIds?.map((moodId) => {
-                    const moodName = moods.find(m => m.Id === moodId)?.pavadinimas || moodId;
+                    const mood = moods.find(m => m.Id === moodId);
+                    const moodName = mood?.pavadinimas || moodId;
+                    const genreNames = mood?.zanrai?.map(z => z.pavadinimas).join(', ') || '';
                     return (
                       <span
                         key={moodId}
                         className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm"
                       >
                         <span className="font-medium">Nuotaika:</span> {moodName}
+                        {genreNames && (
+                          <span className="text-xs opacity-75">({genreNames})</span>
+                        )}
                         <button
                           type="button"
                           onClick={() => {

@@ -9,11 +9,19 @@ import { votingService } from "../../api";
 
 function BookClubPage() {
   const [voting, setVoting] = useState<Voting | null>(null);
+  console.log(voting);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [forecastHidden, setForecastHidden] = useState(true);
   const [weatherForecast, setWeatherForecast] = useState<WeatherForecast | null>(null);
+
+  // Calculate meeting date as 2 days after voting end date
+  const getMeetingDate = (votingEndDate: string): Date => {
+    const endDate = new Date(votingEndDate);
+    endDate.setDate(endDate.getDate() + 2);
+    return endDate;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -103,27 +111,23 @@ function BookClubPage() {
             <h2 className="text-2xl font-bold">Knygų klubas - Balsavimas</h2>
           </div>
 
-          {voting.susitikimo_data && (
-            <p className="mb-4 text-lg">
-              Susitikimo data:{" "}
-              {new Date(voting.susitikimo_data).toLocaleDateString("lt-LT")}
-            </p>
-          )}
+          <p className="mb-4 text-lg">
+            Susitikimo data:{" "}
+            {getMeetingDate(voting.balsavimo_pabaiga).toLocaleDateString("lt-LT")}
+          </p>
 
           <p className="mb-4">
             Balsavimas vyksta iki:{" "}
             {new Date(voting.balsavimo_pabaiga).toLocaleDateString("lt-LT")}
           </p>
 
-          {voting.susitikimo_data && (
-            <button
-              type="button"
-              onClick={() => setForecastHidden(false)}
-              className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg mb-4 transition transform hover:scale-105 hover:shadow-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-300 active:scale-95 cursor-pointer"
-            >
-              Gauti oro prognozę
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setForecastHidden(false)}
+            className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg mb-4 transition transform hover:scale-105 hover:shadow-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-300 active:scale-95 cursor-pointer"
+          >
+            Gauti oro prognozę
+          </button>
 
           {weatherForecast && !forecastHidden && (
             <div className="bg-white rounded-lg p-4 mb-4 text-gray-800">

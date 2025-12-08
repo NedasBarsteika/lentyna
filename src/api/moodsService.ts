@@ -1,6 +1,6 @@
 // src/api/moodsService.ts
 import { api } from './config';
-import type { Mood } from '../types';
+import type { Mood, MoodCreateDto } from '../types';
 
 export const moodsService = {
   // GET /api/nuotaikos
@@ -10,8 +10,8 @@ export const moodsService = {
   },
 
   // POST /api/nuotaikos (editor/admin)
-  create: async (pavadinimas: string): Promise<Mood> => {
-    const response = await api.post<Mood>('/nuotaikos', { pavadinimas });
+  create: async (data: MoodCreateDto): Promise<Mood> => {
+    const response = await api.post<Mood>('/nuotaikos', data);
     return response.data;
   },
 

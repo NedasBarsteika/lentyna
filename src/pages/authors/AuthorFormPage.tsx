@@ -67,30 +67,70 @@ function AuthorFormPage() {
     setLoading(true);
 
     try {
-      // Įkelti nuotrauką, jei pasirinkta nauja
-      let imageUrl = formData.nuotrauka;
-      if (authorImage) {
-        imageUrl = await uploadsService.uploadAuthorPhoto(authorImage);
-      }
-
-      const authorData = {
-        vardas: formData.vardas,
-        pavarde: formData.pavarde,
-        gimimo_metai: formData.gimimo_metai || undefined,
-        mirties_data: formData.mirties_data || undefined,
-        curiculum_vitae: formData.curiculum_vitae || undefined,
-        nuotrauka: imageUrl || undefined,
-        tautybe: formData.tautybe || undefined,
-      };
-
       if (isEditMode && id) {
+        // EDIT MODE: Upload image first (entity already exists)
+        let imageUrl = formData.nuotrauka;
+        if (authorImage) {
+          try {
+            imageUrl = await uploadsService.uploadAuthorPhoto(id, authorImage);
+          } catch (uploadErr: any) {
+            if (uploadErr.response?.status === 404) {
+              setError('Autorius neegzistuoja');
+              return;
+            }
+            throw uploadErr;
+          }
+        }
+
+        const authorData = {
+          vardas: formData.vardas,
+          pavarde: formData.pavarde,
+          gimimo_metai: formData.gimimo_metai || undefined,
+          mirties_data: formData.mirties_data || undefined,
+          curiculum_vitae: formData.curiculum_vitae || undefined,
+          nuotrauka: imageUrl || undefined,
+          tautybe: formData.tautybe || undefined,
+        };
+
         await authorsService.update(id, authorData);
         alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
-        const response = await authorsService.create(authorData);
-        alert("Autorius sėkmingai sukurtas!");
-        navigate(`/autoriai/${response.Id}`);
+        // CREATE MODE: Two-phase approach
+        // Phase 1: Create author WITHOUT image
+        const authorData = {
+          vardas: formData.vardas,
+          pavarde: formData.pavarde,
+          gimimo_metai: formData.gimimo_metai || undefined,
+          mirties_data: formData.mirties_data || undefined,
+          curiculum_vitae: formData.curiculum_vitae || undefined,
+          nuotrauka: undefined, // No image yet
+          tautybe: formData.tautybe || undefined,
+        };
+
+        const createdAuthor = await authorsService.create(authorData);
+        const authorId = createdAuthor.Id;
+
+        // Phase 2: Upload image if selected (now we have author ID)
+        if (authorImage) {
+          try {
+            const imageUrl = await uploadsService.uploadAuthorPhoto(authorId, authorImage);
+
+            // Phase 3: Update author with image URL
+            await authorsService.update(authorId, { nuotrauka: imageUrl });
+
+            alert('Autorius sėkmingai sukurtas!');
+            navigate(`/autoriai/${authorId}`);
+          } catch (uploadErr) {
+            // Author created but image upload failed - allow user to edit later
+            console.error('Image upload failed:', uploadErr);
+            alert('Autorius sukurtas, bet nepavyko įkelti nuotraukos. Redaguokite autorių ir įkelkite nuotrauką vėliau.');
+            navigate(`/autoriai/${authorId}`);
+          }
+        } else {
+          alert('Autorius sėkmingai sukurtas!');
+          navigate(`/autoriai/${authorId}`);
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Nepavyko išsaugoti autoriaus");
