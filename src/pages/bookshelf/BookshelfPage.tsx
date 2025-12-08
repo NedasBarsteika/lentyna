@@ -61,7 +61,7 @@ function BookshelfPage() {
     setLoadingBooks(true);
     setSaveError(null);
     try {
-      const bookshelfBookIds = bookshelfEntries.map((entry) => entry.KnygaId);
+      const bookshelfBookIds = bookshelfEntries.map((entry) => entry?.Knyga?.Id);
       const response = await booksService.getAll({ pageSize: 100 });
       const filteredBooks = response.items.filter(
         (book) => !bookshelfBookIds.includes(book.Id)
@@ -303,7 +303,7 @@ function BookshelfPage() {
                 key={entry.Id}
                 className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden"
               >
-                <Link to={`/knygos/${entry.KnygaId}`}>
+                <Link to={`/knygos/${entry?.Knyga?.Id}`}>
                   <div className="h-64 bg-gray-200 flex items-center justify-center">
                     {entry.Knyga?.virselio_nuotrauka ? (
                       <img
@@ -317,7 +317,7 @@ function BookshelfPage() {
                   </div>
                 </Link>
                 <div className="p-4">
-                  <Link to={`/knygos/${entry.KnygaId}`}>
+                  <Link to={`/knygos/${entry?.Knyga?.Id}`}>
                     <h3 className="text-xl font-bold mb-2 hover:text-blue-600">
                       {entry.Knyga?.knygos_pavadinimas}
                     </h3>

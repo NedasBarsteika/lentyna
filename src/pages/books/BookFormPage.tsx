@@ -6,7 +6,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ImageUpload from "../../components/ImageUpload";
 import type { Author, Genre } from "../../types";
-import { booksService, authorsService, genresService, uploadsService } from "../../api";
+import { booksService, authorsService, uploadsService } from "../../api";
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -27,6 +27,7 @@ function BookFormPage() {
     bestseleris: false,
     virselio_nuotrauka: "",
   });
+  console.log(formData);
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ function BookFormPage() {
     try {
       const [authorsResponse, genresData] = await Promise.all([
         authorsService.getAll(),
-        genresService.getAll()
+        booksService.getGenres()
       ]);
       setAuthors(authorsResponse.items);
       setGenres(genresData);
@@ -51,7 +52,7 @@ function BookFormPage() {
           knygos_pavadinimas: book.knygos_pavadinimas,
           aprasymas: book.aprasymas || "",
           AutoriusId: book.AutoriusId,
-          leidimo_metai: book.leidimo_metai || new Date().toISOString().split('T')[0],
+          leidimo_metai: book.leidimo_metai ? new Date(book.leidimo_metai).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           ZanrasId: book.ZanrasId,
           psl_skaicius: book.psl_skaicius?.toString() || "",
           ISBN: book.ISBN || "",
@@ -89,33 +90,76 @@ function BookFormPage() {
     setLoading(true);
 
     try {
-      // Įkelti nuotrauką, jei pasirinkta nauja
-      let imageUrl = formData.virselio_nuotrauka;
-      if (coverImage) {
-        imageUrl = await uploadsService.uploadBookCover(coverImage);
-      }
-
-      const bookData = {
-        knygos_pavadinimas: formData.knygos_pavadinimas,
-        aprasymas: formData.aprasymas || undefined,
-        AutoriusId: formData.AutoriusId,
-        leidimo_metai: formData.leidimo_metai || undefined,
-        ZanrasId: formData.ZanrasId,
-        psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
-        ISBN: formData.ISBN || undefined,
-        kalba: formData.kalba || undefined,
-        bestseleris: formData.bestseleris,
-        virselio_nuotrauka: imageUrl || undefined,
-      };
-
       if (isEditMode && id) {
+        // EDIT MODE: Upload image first (entity already exists)
+        let imageUrl = formData.virselio_nuotrauka;
+        if (coverImage) {
+          try {
+            imageUrl = await uploadsService.uploadBookCover(id, coverImage);
+          } catch (uploadErr: any) {
+            if (uploadErr.response?.status === 404) {
+              setError('Knyga neegzistuoja');
+              return;
+            }
+            throw uploadErr;
+          }
+        }
+
+        const bookData = {
+          knygos_pavadinimas: formData.knygos_pavadinimas,
+          aprasymas: formData.aprasymas || undefined,
+          AutoriusId: formData.AutoriusId,
+          leidimo_metai: formData.leidimo_metai || undefined,
+          ZanrasId: formData.ZanrasId,
+          psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+          ISBN: formData.ISBN || undefined,
+          kalba: formData.kalba || undefined,
+          bestseleris: formData.bestseleris,
+          virselio_nuotrauka: imageUrl || undefined,
+        };
+
         await booksService.update(id, bookData);
         alert("Knyga sėkmingai atnaujinta!");
         navigate(`/knygos/${id}`);
       } else {
-        const response = await booksService.create(bookData);
-        alert("Knyga sėkmingai sukurta!");
-        navigate(`/knygos/${response.Id}`);
+        // CREATE MODE: Two-phase approach
+        // Phase 1: Create book WITHOUT image
+        const bookData = {
+          knygos_pavadinimas: formData.knygos_pavadinimas,
+          aprasymas: formData.aprasymas || undefined,
+          AutoriusId: formData.AutoriusId,
+          leidimo_metai: formData.leidimo_metai || undefined,
+          ZanrasId: formData.ZanrasId,
+          psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+          ISBN: formData.ISBN || undefined,
+          kalba: formData.kalba || undefined,
+          bestseleris: formData.bestseleris,
+          virselio_nuotrauka: undefined, // No image yet
+        };
+
+        const createdBook = await booksService.create(bookData);
+        const bookId = createdBook.Id;
+
+        // Phase 2: Upload image if selected (now we have book ID)
+        if (coverImage) {
+          try {
+            const imageUrl = await uploadsService.uploadBookCover(bookId, coverImage);
+
+            // Phase 3: Update book with image URL
+            await booksService.update(bookId, { virselio_nuotrauka: imageUrl });
+
+            alert('Knyga sėkmingai sukurta!');
+            navigate(`/knygos/${bookId}`);
+          } catch (uploadErr) {
+            // Book created but image upload failed - allow user to edit later
+            console.error('Image upload failed:', uploadErr);
+            alert('Knyga sukurta, bet nepavyko įkelti viršelio. Redaguokite knygą ir įkelkite viršelį vėliau.');
+            navigate(`/knygos/${bookId}`);
+          }
+        } else {
+          alert('Knyga sėkmingai sukurta!');
+          navigate(`/knygos/${bookId}`);
+        }
       }
     } catch (err: any) {
       console.error(err);

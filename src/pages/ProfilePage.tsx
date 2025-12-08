@@ -367,7 +367,7 @@ function ProfilePage() {
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4 text-red-600">Pavojinga Zona</h2>
+            <h2 className="text-xl font-semibold mb-4 text-red-600">Paskyros ištrynimas</h2>
             <p className="text-gray-600 mb-4">
               Ištrynus paskyrą, visi jūsų duomenys bus pašalinti ir nebegalės būti atstatyti.
             </p>

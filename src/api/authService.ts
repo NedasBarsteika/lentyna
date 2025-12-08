@@ -33,7 +33,18 @@ export const authService = {
   },
 
   // PUT /api/auth/naudotojai/{id}/role (admin only)
-  changeUserRole: async (userId: string, role: string): Promise<void> => {
-    await api.put(`/auth/naudotojai/${userId}/role`, { role });
+  changeUserRole: async (userId: string, roleNumber: number): Promise<void> => {
+    await api.put(`/auth/naudotojai/${userId}/role`, { role: roleNumber });
+  },
+
+  // GET /api/auth/naudotojai (admin only)
+  getAllUsers: async (): Promise<User[]> => {
+    const response = await api.get<User[]>('/auth/naudotojai');
+    return response.data;
+  },
+
+  // DELETE /api/auth/naudotojai/{id} (admin only)
+  deleteUser: async (userId: string): Promise<void> => {
+    await api.delete(`/auth/naudotojai/${userId}`);
   },
 };

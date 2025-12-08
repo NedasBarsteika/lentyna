@@ -110,24 +110,25 @@ function AuthorFormPage() {
     setLoading(true);
 
     try {
-      // Įkelti nuotrauką, jei pasirinkta nauja
-      let imageUrl = formData.nuotrauka;
-      if (authorImage) {
-        imageUrl = await uploadsService.uploadAuthorPhoto(authorImage);
-      }
-
       const authorData = {
         vardas: formData.vardas,
         pavarde: formData.pavarde,
         gimimo_metai: formData.gimimo_metai || undefined,
         mirties_data: formData.mirties_data || undefined,
         curiculum_vitae: formData.curiculum_vitae || undefined,
-        nuotrauka: imageUrl || undefined,
+        nuotrauka: formData.nuotrauka || undefined,
         tautybe: formData.tautybe || undefined,
       };
 
       if (isEditMode && id) {
+        // Redagavimo režimas: pirmiau atnaujinti autorių, tada įkelti nuotrauką jei reikia
         await authorsService.update(id, authorData);
+
+        // Įkelti nuotrauką, jei pasirinkta nauja
+        if (authorImage) {
+          await uploadsService.uploadAuthorPhoto(id, authorImage);
+        }
+
         for (var i of deletions) {
           authorsService.deletecitata(i);
         }
@@ -150,7 +151,14 @@ function AuthorFormPage() {
         alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
+        // Kūrimo režimas: pirmiau sukurti autorių, tada įkelti nuotrauką
         const response = await authorsService.create(authorData);
+
+        // Įkelti nuotrauką, jei pasirinkta
+        if (authorImage) {
+          await uploadsService.uploadAuthorPhoto(response.Id, authorImage);
+        }
+
         for (var citation of citations) {
           var translated: CitationCreateDto = {
             citatos_tekstas: citation.citatos_tekstas,

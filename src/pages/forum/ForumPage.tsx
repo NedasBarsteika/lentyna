@@ -16,6 +16,13 @@ function ForumPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Calculate meeting date as 2 days after voting end date
+  const getMeetingDate = (votingEndDate: string): Date => {
+    const endDate = new Date(votingEndDate);
+    endDate.setDate(endDate.getDate() + 2);
+    return endDate;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     setIsAuthenticated(!!token);
@@ -86,11 +93,9 @@ function ForumPage() {
             </div>
             <p className="text-gray-600 mb-2">
               Dalyvaukite balsavime už savaitės knygą!
-              {currentVoting.susitikimo_data && (
-                <span className="ml-2">
-                  Susitikimas: {new Date(currentVoting.susitikimo_data).toLocaleDateString('lt-LT')}
-                </span>
-              )}
+              <span className="ml-2">
+                Susitikimas: {getMeetingDate(currentVoting.balsavimo_pabaiga).toLocaleDateString('lt-LT')}
+              </span>
             </p>
           </Link>
         )}
