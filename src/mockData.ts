@@ -93,95 +93,89 @@ export const mockAuthors: Author[] = [
   }
 ];
 
-// Mock Moods (Nuotaikos)
+// Mock Moods (Nuotaikos) with associated genres
 export const mockMoods: Mood[] = [
   {
-    id: '1',
-    pavadinimas: 'Džiugi'
+    Id: '1',
+    pavadinimas: 'Džiugi',
+    zanrai: [
+      { Id: '2', pavadinimas: 'Lietuvių literatūra' },
+      { Id: '8', pavadinimas: 'Šiuolaikinė proza' },
+      { Id: '12', pavadinimas: 'Romantiška drama' }
+    ]
   },
   {
-    id: '2',
-    pavadinimas: 'Liūdna'
+    Id: '2',
+    pavadinimas: 'Liūdna',
+    zanrai: [
+      { Id: '1', pavadinimas: 'Istorinis romanas' },
+      { Id: '4', pavadinimas: 'Jaunimo literatūra' },
+      { Id: '5', pavadinimas: 'Karo drama' }
+    ]
   },
   {
-    id: '3',
-    pavadinimas: 'Neutrali'
+    Id: '3',
+    pavadinimas: 'Neutrali',
+    zanrai: [
+      { Id: '3', pavadinimas: 'Šeimos saga' },
+      { Id: '6', pavadinimas: 'Poezija' },
+      { Id: '7', pavadinimas: 'Filosofinė poezija' },
+      { Id: '9', pavadinimas: 'Psichologinis romanas' },
+      { Id: '10', pavadinimas: 'Maginis realizmas' },
+      { Id: '11', pavadinimas: 'Socialinė drama' }
+    ]
   }
 ];
 
 // Mock Genres (Žanrai)
 export const mockGenres: Genre[] = [
   {
-    id: '1',
-    pavadinimas: 'Istorinis romanas',
-    moodIds: ['2', '3'], // Liūdna, Neutrali
-    moods: [mockMoods[1], mockMoods[2]]
+    Id: '1',
+    pavadinimas: 'Istorinis romanas'
   },
   {
-    id: '2',
-    pavadinimas: 'Lietuvių literatūra',
-    moodIds: ['1', '3'], // Džiugi, Neutrali
-    moods: [mockMoods[0], mockMoods[2]]
+    Id: '2',
+    pavadinimas: 'Lietuvių literatūra'
   },
   {
-    id: '3',
-    pavadinimas: 'Šeimos saga',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '3',
+    pavadinimas: 'Šeimos saga'
   },
   {
-    id: '4',
-    pavadinimas: 'Jaunimo literatūra',
-    moodIds: ['2'], // Liūdna
-    moods: [mockMoods[1]]
+    Id: '4',
+    pavadinimas: 'Jaunimo literatūra'
   },
   {
-    id: '5',
-    pavadinimas: 'Karo drama',
-    moodIds: ['2'], // Liūdna
-    moods: [mockMoods[1]]
+    Id: '5',
+    pavadinimas: 'Karo drama'
   },
   {
-    id: '6',
-    pavadinimas: 'Poezija',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '6',
+    pavadinimas: 'Poezija'
   },
   {
-    id: '7',
-    pavadinimas: 'Filosofinė poezija',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '7',
+    pavadinimas: 'Filosofinė poezija'
   },
   {
-    id: '8',
-    pavadinimas: 'Šiuolaikinė proza',
-    moodIds: ['1', '3'], // Džiugi, Neutrali
-    moods: [mockMoods[0], mockMoods[2]]
+    Id: '8',
+    pavadinimas: 'Šiuolaikinė proza'
   },
   {
-    id: '9',
-    pavadinimas: 'Psichologinis romanas',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '9',
+    pavadinimas: 'Psichologinis romanas'
   },
   {
-    id: '10',
-    pavadinimas: 'Maginis realizmas',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '10',
+    pavadinimas: 'Maginis realizmas'
   },
   {
-    id: '11',
-    pavadinimas: 'Socialinė drama',
-    moodIds: ['3'], // Neutrali
-    moods: [mockMoods[2]]
+    Id: '11',
+    pavadinimas: 'Socialinė drama'
   },
   {
-    id: '12',
-    pavadinimas: 'Romantiška drama',
-    moodIds: ['1'], // Džiugi
-    moods: [mockMoods[0]]
+    Id: '12',
+    pavadinimas: 'Romantiška drama'
   }
 ];
 

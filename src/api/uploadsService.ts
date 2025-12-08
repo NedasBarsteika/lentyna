@@ -19,28 +19,33 @@ const uploadFile = async (endpoint: string, file: File): Promise<string> => {
 };
 
 export const uploadsService = {
-  // Bendra nuotrauka (visi prisijungę)
-  uploadImage: (file: File): Promise<string> => {
-    return uploadFile('/uploads/image', file);
-  },
-
-  // Knygos viršelis (redaktorius, admin)
-  uploadBookCover: (file: File): Promise<string> => {
-    return uploadFile('/uploads/knygos/virselis', file);
-  },
-
-  // Autoriaus nuotrauka (redaktorius, admin)
-  uploadAuthorPhoto: (file: File): Promise<string> => {
-    return uploadFile('/uploads/autoriai/nuotrauka', file);
-  },
-
   // Profilio nuotrauka (visi prisijungę)
   uploadProfilePhoto: (file: File): Promise<string> => {
-    return uploadFile('/uploads/profilis/nuotrauka', file);
+    return uploadFile('/auth/profilis/nuotrauka', file);
   },
 
-  // Ištrinti nuotrauką (redaktorius, admin)
-  deleteImage: async (url: string): Promise<void> => {
-    await api.delete('/uploads', { params: { url } });
+  // Knygos viršelis (redaktorius, admin) - NOW REQUIRES book ID
+  uploadBookCover: (bookId: string, file: File): Promise<string> => {
+    return uploadFile(`/knygos/${bookId}/virselis`, file);
+  },
+
+  // Autoriaus nuotrauka (redaktorius, admin) - NOW REQUIRES author ID
+  uploadAuthorPhoto: (authorId: string, file: File): Promise<string> => {
+    return uploadFile(`/autoriai/${authorId}/nuotrauka`, file);
+  },
+
+  // Ištrinti profilio nuotrauką
+  deleteProfilePhoto: async (): Promise<void> => {
+    await api.delete('/auth/profilis/nuotrauka');
+  },
+
+  // Ištrinti knygos viršelį
+  deleteBookCover: async (bookId: string): Promise<void> => {
+    await api.delete(`/knygos/${bookId}/virselis`);
+  },
+
+  // Ištrinti autoriaus nuotrauką
+  deleteAuthorPhoto: async (authorId: string): Promise<void> => {
+    await api.delete(`/autoriai/${authorId}/nuotrauka`);
   },
 };

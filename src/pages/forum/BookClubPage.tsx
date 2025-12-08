@@ -9,11 +9,19 @@ import { votingService } from "../../api";
 
 function BookClubPage() {
   const [voting, setVoting] = useState<Voting | null>(null);
+  console.log(voting);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [weatherForecast, setWeatherForecast] =
     useState<WeatherForecast | null>(null);
+
+  // Calculate meeting date as 2 days after voting end date
+  const getMeetingDate = (votingEndDate: string): Date => {
+    const endDate = new Date(votingEndDate);
+    endDate.setDate(endDate.getDate() + 2);
+    return endDate;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");

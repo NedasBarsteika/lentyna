@@ -10,6 +10,38 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+// Role to numeric mapping for backend API
+export const roleToNumber = (role: string): number => {
+  switch (role) {
+    case UserRole.READER:
+      return 0;
+    case UserRole.EDITOR:
+      return 1;
+    case UserRole.MODERATOR:
+      return 2;
+    case UserRole.ADMIN:
+      return 3;
+    default:
+      return 0;
+  }
+};
+
+// Numeric to role mapping for backend responses
+export const numberToRole = (num: number): string => {
+  switch (num) {
+    case 0:
+      return UserRole.READER;
+    case 1:
+      return UserRole.EDITOR;
+    case 2:
+      return UserRole.MODERATOR;
+    case 3:
+      return UserRole.ADMIN;
+    default:
+      return UserRole.READER;
+  }
+};
+
 // Bookshelf Status (matching backend enum values)
 export const BookshelfStatus = {
   READ: 0, // skaityta
@@ -63,6 +95,12 @@ export interface Genre {
 export interface Mood {
   Id: string;
   pavadinimas: string;
+  zanrai?: Genre[]; // Array of genres associated with this mood
+}
+
+export interface MoodCreateDto {
+  pavadinimas: string;
+  zanrasIds: string[]; // Array of genre IDs
 }
 
 // Author / Autorius
@@ -307,7 +345,6 @@ export interface VotingBook {
 export interface VotingCreateDto {
   balsavimo_pradzia: string;
   balsavimo_pabaiga: string;
-  susitikimo_data?: string;
   nominuotos_knygos: string[];
 }
 

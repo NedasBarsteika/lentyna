@@ -11,5 +11,4 @@ export { votingService } from './votingService';
 export { followingService } from './followingService';
 export { genresService } from './genresService';
 export { moodsService } from './moodsService';
-export { citationsService } from './citationsService';
 export { uploadsService } from './uploadsService';

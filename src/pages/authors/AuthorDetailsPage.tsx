@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import type { Author, Book, Citation } from '../../types';
-import { authorsService, followingService, citationsService } from '../../api';
+import { authorsService, followingService } from '../../api';
 import { UserRole } from '../../types';
 
 function AuthorDetailsPage() {
@@ -60,7 +60,7 @@ function AuthorDetailsPage() {
 
   const fetchAuthorCitations = async () => {
     try {
-      const data = await citationsService.getByAuthorId(id!);
+      const data = await authorsService.getAuthorCitations(id!);
       setCitations(data);
     } catch (err) {
       console.error('Failed to fetch citations', err);
@@ -94,13 +94,21 @@ function AuthorDetailsPage() {
 
   const handleDelete = async () => {
     if (window.confirm('Ar tikrai norite ištrinti šį autorių?')) {
+
       try {
+        if (books.length != 0) {
+          alert('Autorius turi knygų');
+          return;
+        }
         await authorsService.delete(id!);
+        alert('Ištrynimas sėkmingas');
         navigate('/autoriai');
       } catch (err) {
         alert('Nepavyko ištrinti autoriaus');
       }
-    }
+    } else {
+        alert('Atšaukta');
+     }
   };
 
   if (loading) {
