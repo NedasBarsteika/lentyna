@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import type { Book, Review } from "../../types";
+import type { AIComment, AIReview, Book, Review } from "../../types";
 import { booksService, reviewsService, bookshelfService } from "../../api";
 import { UserRole, BookshelfStatus } from "../../types";
 
@@ -20,6 +20,7 @@ function BookDetailsPage() {
   const [isEditor, setIsEditor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [DIKomentaras, setAIComment] = useState<AIComment | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -51,6 +52,8 @@ function BookDetailsPage() {
     try {
       const data = await reviewsService.getByBookId(id!);
       setReviews(data);
+      const koment = await reviewsService.getDIComment(id!);
+      setAIComment(koment);
     } catch (err) {
       console.error("Failed to fetch reviews", err);
     }
@@ -271,12 +274,12 @@ function BookDetailsPage() {
             )}
           </div>
 
-          {reviews.length === 0 && !book?.di_komentaras ? (
+          {reviews.length === 0 && !DIKomentaras? (
             <p className="text-gray-600">Atsiliepimų dar nėra</p>
           ) : (
             <div className="space-y-4">
               {/* AI Generated Comment */}
-              {book?.di_komentaras && (
+              {DIKomentaras && (
                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-4">
@@ -284,14 +287,14 @@ function BookDetailsPage() {
                         🤖 DI sugeneruotas komentaras
                       </span>
                       <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full">
-                        {book.di_komentaras.modelis}
+                        {DIKomentaras.modelis}
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      {new Date(book.di_komentaras.sugeneravimo_data).toLocaleDateString('lt-LT')}
+                      {new Date(DIKomentaras.sugeneravimo_data).toLocaleDateString('lt-LT')}
                     </span>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{book.di_komentaras.tekstas}</p>
+                  <p className="text-gray-700 leading-relaxed">{DIKomentaras.tekstas}</p>
                 </div>
               )}
 

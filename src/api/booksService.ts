@@ -1,7 +1,7 @@
 // src/api/booksService.ts
 import { api } from './config';
 import type { PaginatedResponse } from './config';
-import type { Book, BookCreateDto, BookUpdateDto, BookSearchDto, Review } from '../types';
+import type { Book, BookCreateDto, BookUpdateDto, BookSearchDto } from '../types';
 
 export interface BooksQueryParams {
   page?: number;
@@ -24,12 +24,6 @@ export const booksService = {
   // GET /api/knygos/{id}
   getById: async (id: string): Promise<Book> => {
     const response = await api.get<Book>(`/knygos/${id}`);
-    return response.data;
-  },
-
-  // GET /api/knygos/{id}/komentarai
-  getBookReviews: async (bookId: string): Promise<Review[]> => {
-    const response = await api.get<Review[]>(`/knygos/${bookId}/komentarai`);
     return response.data;
   },
 
