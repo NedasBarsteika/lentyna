@@ -110,32 +110,25 @@ function AuthorFormPage() {
     setLoading(true);
 
     try {
+      const authorData = {
+        vardas: formData.vardas,
+        pavarde: formData.pavarde,
+        gimimo_metai: formData.gimimo_metai || undefined,
+        mirties_data: formData.mirties_data || undefined,
+        curiculum_vitae: formData.curiculum_vitae || undefined,
+        nuotrauka: formData.nuotrauka || undefined,
+        tautybe: formData.tautybe || undefined,
+      };
+
       if (isEditMode && id) {
-        // EDIT MODE: Upload image first (entity already exists)
-        let imageUrl = formData.nuotrauka;
+        // Redagavimo režimas: pirmiau atnaujinti autorių, tada įkelti nuotrauką jei reikia
+        await authorsService.update(id, authorData);
+
+        // Įkelti nuotrauką, jei pasirinkta nauja
         if (authorImage) {
-          try {
-            imageUrl = await uploadsService.uploadAuthorPhoto(id, authorImage);
-          } catch (uploadErr: any) {
-            if (uploadErr.response?.status === 404) {
-              setError('Autorius neegzistuoja');
-              return;
-            }
-            throw uploadErr;
-          }
+          await uploadsService.uploadAuthorPhoto(id, authorImage);
         }
 
-        const authorData = {
-          vardas: formData.vardas,
-          pavarde: formData.pavarde,
-          gimimo_metai: formData.gimimo_metai || undefined,
-          mirties_data: formData.mirties_data || undefined,
-          curiculum_vitae: formData.curiculum_vitae || undefined,
-          nuotrauka: imageUrl || undefined,
-          tautybe: formData.tautybe || undefined,
-        };
-
-        await authorsService.update(id, authorData);
         for (var i of deletions) {
           authorsService.deletecitata(i);
         }
@@ -158,7 +151,14 @@ function AuthorFormPage() {
         alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
+        // Kūrimo režimas: pirmiau sukurti autorių, tada įkelti nuotrauką
         const response = await authorsService.create(authorData);
+
+        // Įkelti nuotrauką, jei pasirinkta
+        if (authorImage) {
+          await uploadsService.uploadAuthorPhoto(response.Id, authorImage);
+        }
+
         for (var citation of citations) {
           var translated: CitationCreateDto = {
             citatos_tekstas: citation.citatos_tekstas,
