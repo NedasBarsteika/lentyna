@@ -27,12 +27,6 @@ export const booksService = {
     return response.data;
   },
 
-  // GET /api/knygos/{id}/komentarai
-  getBookReviews: async (bookId: string): Promise<Review[]> => {
-    const response = await api.get<Review[]>(`/knygos/${bookId}/komentarai`);
-    return response.data;
-  },
-
   // POST /api/knygos (editor/admin)
   create: async (data: BookCreateDto): Promise<Book> => {
     const response = await api.post<Book>('/knygos', data);

@@ -1,6 +1,6 @@
 // src/api/reviewsService.ts
 import { api } from './config';
-import type { Review, ReviewCreateDto, ReviewUpdateDto } from '../types';
+import type { Review, ReviewCreateDto, ReviewUpdateDto, AIComment } from '../types';
 
 export const reviewsService = {
   // GET /api/komentarai/knyga/{knygaId}
@@ -25,4 +25,18 @@ export const reviewsService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/komentarai/${id}`);
   },
+
+   // GET /api/knygos/{id}/komentarai
+    getBookReviews: async (bookId: string): Promise<Review[]> => {
+      const response = await api.get<Review[]>(`/komentarai/komentarai/${bookId}`);
+      return response.data;
+    },
+
+     // GET /api/komentarai/knyga/{knygaId}
+    getDIComment: async (bookId: string): Promise<AIComment> => {
+    const response = await api.get<AIComment>(`/komentarai/dikomentaras/${bookId}`);
+    return response.data;
+  },
+
+
 };
