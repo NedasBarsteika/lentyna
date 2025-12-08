@@ -27,6 +27,7 @@ function BookFormPage() {
     bestseleris: false,
     virselio_nuotrauka: "",
   });
+  console.log(formData);
 
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ function BookFormPage() {
           knygos_pavadinimas: book.knygos_pavadinimas,
           aprasymas: book.aprasymas || "",
           AutoriusId: book.AutoriusId,
-          leidimo_metai: book.leidimo_metai || new Date().toISOString().split('T')[0],
+          leidimo_metai: book.leidimo_metai ? new Date(book.leidimo_metai).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           ZanrasId: book.ZanrasId,
           psl_skaicius: book.psl_skaicius?.toString() || "",
           ISBN: book.ISBN || "",
