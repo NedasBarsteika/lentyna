@@ -71,8 +71,8 @@ function HomePage() {
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-3">📖</div>
-                <h3 className="font-semibold text-lg mb-2">Knygų sąrašas</h3>
-                <p className="text-gray-600 text-sm">Tvarkykite savo asmeninį knygų sąrašą</p>
+                <h3 className="font-semibold text-lg mb-2">Knygų lentyna</h3>
+                <p className="text-gray-600 text-sm">Tvarkykite savo asmeninę knygų lentyną</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-3">🎯</div>
