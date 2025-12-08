@@ -6,7 +6,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import { MultiSelect } from '../../components/MultiSelect';
 import type { Book, BookSearchDto, Genre, Mood } from '../../types';
-import { booksService, genresService, moodsService } from '../../api';
+import { booksService } from '../../api';
 import { UserRole } from '../../types';
 
 function BooksPage() {
@@ -38,8 +38,8 @@ function BooksPage() {
   const loadInitialData = async () => {
     try {
       const [genresData, moodsData] = await Promise.all([
-        genresService.getAll(),
-        moodsService.getAll()
+        booksService.getGenres(),
+        booksService.getMoods()
       ]);
       setGenres(genresData);
       setMoods(moodsData);

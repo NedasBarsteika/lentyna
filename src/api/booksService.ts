@@ -1,7 +1,7 @@
 // src/api/booksService.ts
 import { api } from './config';
 import type { PaginatedResponse } from './config';
-import type { Book, BookCreateDto, BookUpdateDto, BookSearchDto, Review } from '../types';
+import type { Book, BookCreateDto, BookUpdateDto, BookSearchDto, Review, Genre, Mood, MoodCreateDto } from '../types';
 
 export interface BooksQueryParams {
   page?: number;
@@ -54,5 +54,39 @@ export const booksService = {
   advancedSearch: async (data: BookSearchDto): Promise<Book[]> => {
     const response = await api.post<Book[]>('/knygos/isplestine-paieska', data);
     return response.data;
+  },
+
+  // GET /api/knygos/zanrai
+  getGenres: async (): Promise<Genre[]> => {
+    const response = await api.get<Genre[]>('/knygos/zanrai');
+    return response.data;
+  },
+
+  // POST /api/knygos/zanrai (editor/admin)
+  createGenre: async (pavadinimas: string): Promise<Genre> => {
+    const response = await api.post<Genre>('/knygos/zanrai', { pavadinimas });
+    return response.data;
+  },
+
+  // DELETE /api/knygos/zanrai/{id} (editor/admin)
+  deleteGenre: async (id: string): Promise<void> => {
+    await api.delete(`/knygos/zanrai/${id}`);
+  },
+
+  // GET /api/knygos/nuotaikos
+  getMoods: async (): Promise<Mood[]> => {
+    const response = await api.get<Mood[]>('/knygos/nuotaikos');
+    return response.data;
+  },
+
+  // POST /api/knygos/nuotaikos (editor/admin)
+  createMood: async (data: MoodCreateDto): Promise<Mood> => {
+    const response = await api.post<Mood>('/knygos/nuotaikos', data);
+    return response.data;
+  },
+
+  // DELETE /api/knygos/nuotaikos/{id} (editor/admin)
+  deleteMood: async (id: string): Promise<void> => {
+    await api.delete(`/knygos/nuotaikos/${id}`);
   },
 };

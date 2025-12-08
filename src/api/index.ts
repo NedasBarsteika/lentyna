@@ -9,6 +9,4 @@ export { bookshelfService, type BookshelfQueryParams } from './bookshelfService'
 export { forumService, type TopicsQueryParams } from './forumService';
 export { votingService } from './votingService';
 export { followingService } from './followingService';
-export { genresService } from './genresService';
-export { moodsService } from './moodsService';
 export { uploadsService } from './uploadsService';
