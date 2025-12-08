@@ -5,19 +5,20 @@ export const UserRole = {
   ADMIN: "admin",
   MODERATOR: "moderatorius",
   EDITOR: "redaktorius",
-  READER: "naudotojas"
+  READER: "naudotojas",
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // Bookshelf Status (matching backend enum values)
 export const BookshelfStatus = {
-  READ: 0,        // skaityta
-  READING: 2,     // skaitoma
-  WANT_TO_READ: 1 // norima_skaityti
+  READ: 0, // skaityta
+  READING: 2, // skaitoma
+  WANT_TO_READ: 1, // norima_skaityti
 } as const;
 
-export type BookshelfStatus = typeof BookshelfStatus[keyof typeof BookshelfStatus];
+export type BookshelfStatus =
+  (typeof BookshelfStatus)[keyof typeof BookshelfStatus];
 
 // ============ Backend Response Types ============
 
@@ -284,9 +285,15 @@ export interface Voting {
   balsavimo_pradzia: string;
   balsavimo_pabaiga: string;
   susitikimo_data?: string;
-  isrinkta_knyga_id?: string;
+  isrinkta_knyga?: {
+    Id: string;
+    knygos_pavadinimas: string;
+    autorius_vardas?: string;
+    virselio_nuotrauka?: string;
+    balsu_skaicius: number;
+  };
   uzbaigtas: boolean;
-  nominuotos_knygos?: VotingBook[];
+  nominuotos_knygos: VotingBook[];
 }
 
 export interface VotingBook {

@@ -6,7 +6,12 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ImageUpload from "../../components/ImageUpload";
 import type { Author, Genre } from "../../types";
-import { booksService, authorsService, genresService, uploadsService } from "../../api";
+import {
+  booksService,
+  authorsService,
+  genresService,
+  uploadsService,
+} from "../../api";
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -19,7 +24,7 @@ function BookFormPage() {
     knygos_pavadinimas: "",
     aprasymas: "",
     AutoriusId: "",
-    leidimo_metai: new Date().toISOString().split('T')[0],
+    leidimo_metai: new Date().toISOString().split("T")[0],
     ZanrasId: "",
     psl_skaicius: "",
     ISBN: "",
@@ -40,7 +45,7 @@ function BookFormPage() {
     try {
       const [authorsResponse, genresData] = await Promise.all([
         authorsService.getAll(),
-        genresService.getAll()
+        genresService.getAll(),
       ]);
       setAuthors(authorsResponse.items);
       setGenres(genresData);
@@ -51,7 +56,8 @@ function BookFormPage() {
           knygos_pavadinimas: book.knygos_pavadinimas,
           aprasymas: book.aprasymas || "",
           AutoriusId: book.AutoriusId,
-          leidimo_metai: book.leidimo_metai || new Date().toISOString().split('T')[0],
+          leidimo_metai:
+            book.leidimo_metai || new Date().toISOString().split("T")[0],
           ZanrasId: book.ZanrasId,
           psl_skaicius: book.psl_skaicius?.toString() || "",
           ISBN: book.ISBN || "",
@@ -67,11 +73,16 @@ function BookFormPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      setFormData({ ...formData, [name]: (e.target as HTMLInputElement).checked });
+    if (type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: (e.target as HTMLInputElement).checked,
+      });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -81,7 +92,11 @@ function BookFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.knygos_pavadinimas || !formData.AutoriusId || !formData.ZanrasId) {
+    if (
+      !formData.knygos_pavadinimas ||
+      !formData.AutoriusId ||
+      !formData.ZanrasId
+    ) {
       setError("Užpildykite visus privalomus laukus");
       return;
     }
@@ -101,7 +116,9 @@ function BookFormPage() {
         AutoriusId: formData.AutoriusId,
         leidimo_metai: formData.leidimo_metai || undefined,
         ZanrasId: formData.ZanrasId,
-        psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+        psl_skaicius: formData.psl_skaicius
+          ? parseInt(formData.psl_skaicius)
+          : undefined,
         ISBN: formData.ISBN || undefined,
         kalba: formData.kalba || undefined,
         bestseleris: formData.bestseleris,
@@ -223,7 +240,9 @@ function BookFormPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold mb-2">Puslapių skaičius</label>
+              <label className="block font-semibold mb-2">
+                Puslapių skaičius
+              </label>
               <input
                 type="number"
                 name="psl_skaicius"
@@ -276,7 +295,9 @@ function BookFormPage() {
               onChange={handleChange}
               className="w-5 h-5"
             />
-            <label htmlFor="bestseleris" className="font-semibold">Bestseleris</label>
+            <label htmlFor="bestseleris" className="font-semibold">
+              Bestseleris
+            </label>
           </div>
 
           <div className="flex gap-4">
