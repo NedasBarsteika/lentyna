@@ -94,13 +94,21 @@ function AuthorDetailsPage() {
 
   const handleDelete = async () => {
     if (window.confirm('Ar tikrai norite ištrinti šį autorių?')) {
+
       try {
+        if (books.length != 0) {
+          alert('Autorius turi knygų');
+          return;
+        }
         await authorsService.delete(id!);
+        alert('Ištrynimas sėkmingas');
         navigate('/autoriai');
       } catch (err) {
         alert('Nepavyko ištrinti autoriaus');
       }
-    }
+    } else {
+        alert('Atšaukta');
+     }
   };
 
   if (loading) {

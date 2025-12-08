@@ -6,6 +6,8 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { authorsService, uploadsService } from "../../api";
 import ImageUpload from "../../components/ImageUpload";
+import type { Citation, CitationCreateDto } from "../../types";
+
 
 function AuthorFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -25,6 +27,14 @@ function AuthorFormPage() {
   const [authorImage, setAuthorImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [citations, setCitations] = useState<Citation[]>([]);
+  const [deletions, setDeletions] = useState<string[]>([]);
+
+  const [currentCitation, setCurrentCitation] = useState({
+    tekstas: "",
+    saltinis: "",
+    data: "",
+  });
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -44,6 +54,8 @@ function AuthorFormPage() {
         nuotrauka: author.nuotrauka || "",
         tautybe: author.tautybe || "",
       });
+      const resp = await authorsService.getAuthorCitations(id!);
+      setCitations(resp);
     } catch (err) {
       setError("Nepavyko užkrauti autoriaus informacijos");
     }
@@ -55,12 +67,43 @@ function AuthorFormPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleCitationChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setCurrentCitation({ ...currentCitation, [e.target.name]: e.target.value });
+  };
+
+  const createCitation = () => {
+    if (currentCitation.tekstas == "") {
+      return;
+    }
+    setCitations([...citations, {AutoriusId: "", citatos_tekstas: currentCitation.tekstas, citatos_saltinis: currentCitation.saltinis, citatos_data: currentCitation.data, Id: Math.random().toString()}])
+    setCurrentCitation({
+      tekstas: "",
+      saltinis: "",
+      data: "",
+    })
+  };
+
+  const deleteCitation = (
+    id: string,
+  ) => {
+    setDeletions([...deletions, id])
+    setCitations(citations.filter(c => c.Id != id))
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!formData.vardas || !formData.pavarde) {
       setError("Užpildykite visus privalomus laukus");
+      alert("Užpildykite visus privalomus laukus");
+      return;
+    }
+
+    if (formData.mirties_data < formData.gimimo_metai) {
+      alert("Mirties data anksčiau negu gimimo");
       return;
     }
 
@@ -93,44 +136,40 @@ function AuthorFormPage() {
         };
 
         await authorsService.update(id, authorData);
+        for (var i of deletions) {
+          authorsService.deletecitata(i);
+        }
+
+        for (var citation of citations) {
+          console.log(JSON.stringify(citations));
+          if (citation.AutoriusId != "") {
+            continue;
+          }
+
+          var translated: CitationCreateDto = {
+            citatos_tekstas: citation.citatos_tekstas,
+            citatos_data: citation.citatos_data == "" ? undefined : citation.citatos_data,
+            citatos_saltinis: citation.citatos_saltinis,
+            AutoriusId: id,
+          }
+          await authorsService.createcitata(translated);
+        }
+
         alert("Autorius sėkmingai atnaujintas!");
         navigate(`/autoriai/${id}`);
       } else {
-        // CREATE MODE: Two-phase approach
-        // Phase 1: Create author WITHOUT image
-        const authorData = {
-          vardas: formData.vardas,
-          pavarde: formData.pavarde,
-          gimimo_metai: formData.gimimo_metai || undefined,
-          mirties_data: formData.mirties_data || undefined,
-          curiculum_vitae: formData.curiculum_vitae || undefined,
-          nuotrauka: undefined, // No image yet
-          tautybe: formData.tautybe || undefined,
-        };
-
-        const createdAuthor = await authorsService.create(authorData);
-        const authorId = createdAuthor.Id;
-
-        // Phase 2: Upload image if selected (now we have author ID)
-        if (authorImage) {
-          try {
-            const imageUrl = await uploadsService.uploadAuthorPhoto(authorId, authorImage);
-
-            // Phase 3: Update author with image URL
-            await authorsService.update(authorId, { nuotrauka: imageUrl });
-
-            alert('Autorius sėkmingai sukurtas!');
-            navigate(`/autoriai/${authorId}`);
-          } catch (uploadErr) {
-            // Author created but image upload failed - allow user to edit later
-            console.error('Image upload failed:', uploadErr);
-            alert('Autorius sukurtas, bet nepavyko įkelti nuotraukos. Redaguokite autorių ir įkelkite nuotrauką vėliau.');
-            navigate(`/autoriai/${authorId}`);
+        const response = await authorsService.create(authorData);
+        for (var citation of citations) {
+          var translated: CitationCreateDto = {
+            citatos_tekstas: citation.citatos_tekstas,
+            citatos_data: citation.citatos_data == "" ? undefined : citation.citatos_data,
+            citatos_saltinis: citation.citatos_saltinis,
+            AutoriusId: response.Id
           }
-        } else {
-          alert('Autorius sėkmingai sukurtas!');
-          navigate(`/autoriai/${authorId}`);
+          authorsService.createcitata(translated);
         }
+        alert("Autorius sėkmingai sukurtas!");
+        navigate(`/autoriai/${response.Id}`);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Nepavyko išsaugoti autoriaus");
@@ -240,6 +279,85 @@ function AuthorFormPage() {
               placeholder="Parašykite autoriaus biografiją..."
             />
           </div>
+
+
+          <div className="space-y-3">
+              {citations && citations.map((citata) => (
+                <div>
+                  <p className="text-gray-600 mb-2 line-clamp-2">{citata.citatos_tekstas}</p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="mr-4">
+                      {citata?.citatos_saltinis || "Nežinomas"}
+                    </span>
+                    <span className="mr-4">
+                      {citata.citatos_data || "Nežinoma data"}
+                    </span>
+                    <span>
+                    <button
+              type="button"
+               onClick={() =>
+                deleteCitation(citata.Id)
+              }
+              disabled={loading}
+              className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+            >Ištrinti</button>
+                  </span>
+                  </div>
+                </div>
+                
+              ))}
+              
+            </div>
+
+
+          <div>
+            <label className="block font-semibold mb-2">Citata</label>
+            <textarea
+              name="tekstas"
+              value={currentCitation.tekstas}
+              onChange={handleCitationChange}
+              rows={5}
+              className="w-full px-4 py-2 border rounded-lg"
+              placeholder="Parašykite autoriaus citatą..."
+            />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block font-semibold mb-2">Šaltinis</label>
+              <input
+                type="text"
+                name="saltinis"
+                value={currentCitation.saltinis}
+                onChange={handleCitationChange}
+                className="w-full px-4 py-2 border rounded-lg"
+                maxLength={100}
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-2">Data</label>
+              <input
+                type="date"
+                name="data"
+                value={currentCitation.data}
+                onChange={handleCitationChange}
+                className="w-full px-4 py-2 border rounded-lg"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={()=>{createCitation()}}
+              disabled={loading}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+            >
+              Pridėti citatą
+            </button>
+          </div>
+          </div>
+
+
+
+
+
 
           <ImageUpload
             value={authorImage}
