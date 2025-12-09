@@ -16,7 +16,6 @@ function TopicFormPage() {
     tekstas: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -32,7 +31,7 @@ function TopicFormPage() {
         tekstas: topic.tekstas,
       });
     } catch (err) {
-      setError("Nepavyko užkrauti temos informacijos");
+      alert("Nepavyko užkrauti temos informacijos");
     }
   };
 
@@ -42,12 +41,39 @@ function TopicFormPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const validateForm = (): boolean => {
+    if (!formData.pavadinimas.trim()) {
+      alert("Pavadinimas yra privalomas");
+      return false;
+    }
+
+    if (formData.pavadinimas.trim().length < 3) {
+      alert("Pavadinimas turi būti bent 3 simbolių ilgio");
+      return false;
+    }
+
+    if (formData.pavadinimas.trim().length > 255) {
+      alert("Pavadinimas negali viršyti 255 simbolių");
+      return false;
+    }
+
+    if (!formData.tekstas.trim()) {
+      alert("Tekstas yra privalomas");
+      return false;
+    }
+
+    if (formData.tekstas.trim().length < 10) {
+      alert("Tekstas turi būti bent 10 simbolių ilgio");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
-    if (!formData.pavadinimas.trim() || !formData.tekstas.trim()) {
-      setError("Užpildykite visus laukus");
+    if (!validateForm()) {
       return;
     }
 
@@ -64,7 +90,7 @@ function TopicFormPage() {
         navigate(`/forumas/tema/${response.Id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Nepavyko išsaugoti temos");
+      alert(err.response?.data?.message || "Nepavyko išsaugoti temos");
     } finally {
       setLoading(false);
     }
@@ -84,12 +110,6 @@ function TopicFormPage() {
         <h1 className="text-4xl font-bold mb-6">
           {isEditMode ? "Temos redagavimas" : "Naujos temos kūrimas"}
         </h1>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
 
         <form
           onSubmit={handleSubmit}
