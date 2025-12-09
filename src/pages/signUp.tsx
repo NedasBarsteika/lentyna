@@ -4,22 +4,21 @@ import "../App.css";
 import NavbarOnlyLogo from "../components/NavbarOnlyLogo";
 import Footer from "../components/Footer";
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../api";
 
 function SignUpPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: "",
-    surname: "",
-    email: "",
-    password: "",
+    slapyvardis: "",
+    el_pastas: "",
+    slaptazodis: "",
     confirmPassword: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,42 +28,54 @@ function SignUpPage() {
     e.preventDefault();
     setError(null);
 
+    // Validation
     if (
-      !formData.name ||
-      !formData.surname ||
-      !formData.email ||
-      !formData.password ||
+      !formData.slapyvardis ||
+      !formData.el_pastas ||
+      !formData.slaptazodis ||
       !formData.confirmPassword
     ) {
       setError("Įveskite visus duomenis");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.slaptazodis !== formData.confirmPassword) {
       setError("Slaptažodžiai skiriasi!");
+      return;
+    }
+
+    if (formData.slaptazodis.length < 6) {
+      setError("Slaptažodis turi būti bent 6 simbolių");
       return;
     }
 
     setLoading(true);
 
-    await axios
-      .post("https://localhost:7296/user/register", {
-        name: formData.name,
-        surname: formData.surname,
-        email: formData.email,
-        password: formData.password,
-      })
-      .then(function (response: any) {
-        if (response.status === 200) {
-          alert("Registracija sėkminga!");
-          navigate("/prisijungimas");
-        } else if (response.status === 500) {
-          setError("Serverio klaida. Bandykite kitą kartą.");
-        }
-      })
-      .catch(function (error: any) {
-        setError(error.response.data);
+    try {
+      const response = await authService.register({
+        slapyvardis: formData.slapyvardis,
+        el_pastas: formData.el_pastas,
+        slaptazodis: formData.slaptazodis,
       });
+
+      // Auto-login after successful registration
+      const token = response.token;
+      const user = response.naudotojas;
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
+
+      navigate("/", { replace: true });
+    } catch (err: any) {
+      console.error("Registracijos klaida:", err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        setError("El. paštas arba slapyvardis jau užimtas");
+      } else {
+        setError("Įvyko klaida registruojantis. Bandykite dar kartą.");
+      }
+    }
 
     setLoading(false);
   };
@@ -93,39 +104,33 @@ function SignUpPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
-                name="name"
-                placeholder="Vardas"
-                value={formData.name}
+                name="slapyvardis"
+                placeholder="Slapyvardis"
+                value={formData.slapyvardis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
-              />
-              <input
-                type="text"
-                name="surname"
-                placeholder="Pavardė"
-                value={formData.surname}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
+                minLength={3}
+                maxLength={100}
               />
               <input
                 type="email"
-                name="email"
+                name="el_pastas"
                 placeholder="El. paštas"
-                value={formData.email}
+                value={formData.el_pastas}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
                 type="password"
-                name="password"
+                name="slaptazodis"
                 placeholder="Slaptažodis"
-                value={formData.password}
+                value={formData.slaptazodis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
+                minLength={6}
               />
               <input
                 type="password"

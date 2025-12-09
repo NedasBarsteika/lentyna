@@ -1,23 +1,23 @@
-// src/pages/signUp.tsx
+// src/pages/login.tsx
 import { motion } from "framer-motion";
 import "../App.css";
 import NavbarOnlyLogo from "../components/NavbarOnlyLogo";
 import Footer from "../components/Footer";
 import { useState } from "react";
-import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import { authService } from "../api";
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    el_pastas: "",
+    slaptazodis: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -27,34 +27,36 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.email || !formData.password) {
+    if (!formData.el_pastas || !formData.slaptazodis) {
       setError("Įveskite prisijungimo duomenis");
       return;
     }
 
     setLoading(true);
 
-    await axios
-      .post("https://localhost:7296/user/login", {
-        email: formData.email,
-        password: formData.password,
-      })
-      .then(function (response: any) {
-        if (response.status === 200) {
-          const token = response.data.token;
-          const user = response.data.user;
-          localStorage.setItem("authToken", token);
-          localStorage.setItem("user", JSON.stringify(user));
-          document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
-          const previousPage = location.state?.from || "/";
-          navigate(previousPage, { replace: true });
-        } else if (response.status === 500) {
-          setError("Serverio klaida. Bandykite kitą kartą.");
-        }
-      })
-      .catch(function (error: any) {
-        setError(error.response.data);
+    try {
+      const response = await authService.login({
+        el_pastas: formData.el_pastas,
+        slaptazodis: formData.slaptazodis,
       });
+
+      const token = response.token;
+      const user = response.naudotojas;
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      document.cookie = `token=${token}; path=/; max-age=3600; Secure; SameSite=Strict`;
+      const previousPage = location.state?.from || "/";
+      navigate(previousPage, { replace: true });
+    } catch (err: any) {
+      console.error("Prisijungimo klaida:", err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError("Neteisingas el. paštas arba slaptažodis");
+      } else {
+        setError("Įvyko klaida prisijungiant. Bandykite dar kartą.");
+      }
+    }
 
     setLoading(false);
   };
@@ -83,18 +85,18 @@ function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="email"
-                name="email"
+                name="el_pastas"
                 placeholder="El. paštas"
-                value={formData.email}
+                value={formData.el_pastas}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
               />
               <input
                 type="password"
-                name="password"
+                name="slaptazodis"
                 placeholder="Slaptažodis"
-                value={formData.password}
+                value={formData.slaptazodis}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
                 required
