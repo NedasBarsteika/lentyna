@@ -41,7 +41,7 @@ function BookshelfPage() {
       const data = await bookshelfService.getAll();
       setBookshelfEntries(data);
     } catch (err: any) {
-      setError("Nepavyko užkrauti knygų sąrašo");
+      setError("Nepavyko užkrauti knygų lentynos");
       console.error(err);
     } finally {
       setLoading(false);
@@ -69,20 +69,20 @@ function BookshelfPage() {
       setAvailableBooks(filteredBooks);
     } catch (err) {
       console.error("Failed to fetch books", err);
-      setSaveError("Nepavyko užkrauti knygų sąrašo");
+      setSaveError("Nepavyko užkrauti knygų lentynos");
     } finally {
       setLoadingBooks(false);
     }
   };
 
   const handleRemove = async (entryId: string) => {
-    if (window.confirm("Ar tikrai norite pašalinti šią knygą iš sąrašo?")) {
+    if (window.confirm("Ar tikrai norite pašalinti šią knygą iš lentynos?")) {
       try {
         await bookshelfService.delete(entryId);
         setBookshelfEntries(
           bookshelfEntries.filter((entry) => entry.Id !== entryId)
         );
-        alert("Knyga pašalinta iš sąrašo");
+        alert("Knyga pašalinta iš lentynos");
       } catch (err) {
         alert("Nepavyko pašalinti knygos");
       }
@@ -134,11 +134,11 @@ function BookshelfPage() {
       setShowAddModal(false);
       setSelectedBookId(null);
       setSearchQuery("");
-      alert("Knyga sėkmingai pridėta į sąrašą!");
+      alert("Knyga sėkmingai pridėta į lentyną!");
     } catch (err: any) {
       console.error("Failed to add book", err);
       setSaveError(
-        err.response?.data?.message || "Nepavyko pridėti knygos į sąrašą"
+        err.response?.data?.message || "Nepavyko pridėti knygos į lentyną"
       );
     } finally {
       setLoadingBooks(false);
@@ -193,7 +193,7 @@ function BookshelfPage() {
         transition={{ duration: 0.5 }}
         className="flex-grow max-w-screen-xl mx-auto w-full p-6"
       >
-        <h1 className="text-4xl font-bold mb-6">Mano knygų sąrašas</h1>
+        <h1 className="text-4xl font-bold mb-6">Mano knygų lentyna</h1>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -450,7 +450,7 @@ function BookshelfPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-5 text-center">
-              Pridėti knygą į sąrašą
+              Pridėti knygą į lentyną
             </h2>
 
             {loadingBooks ? (
@@ -460,7 +460,7 @@ function BookshelfPage() {
             ) : availableBooks.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-600 mb-4">
-                  Visos knygos jau pridėtos į jūsų sąrašą!
+                  Visos knygos jau pridėtos į jūsų lentyną!
                 </p>
                 <button
                   onClick={handleCloseModal}

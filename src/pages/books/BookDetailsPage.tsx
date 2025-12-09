@@ -95,9 +95,9 @@ function BookDetailsPage() {
         KnygaId: id!,
         tipas: status,
       });
-      alert("Knyga pridėta į jūsų sąrašą!");
+      alert("Knyga pridėta į jūsų lentyną!");
     } catch (err) {
-      alert("Nepavyko pridėti knygos į sąrašą");
+      alert("Nepavyko pridėti knygos į lentyną");
     }
   };
 
@@ -155,7 +155,7 @@ function BookDetailsPage() {
               {/* Add to Bookshelf */}
               {isAuthenticated && (
                 <div className="mt-4">
-                  <p className="font-semibold mb-2">Pridėti į sąrašą:</p>
+                  <p className="font-semibold mb-2">Pridėti į lentyną:</p>
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => addToBookshelf(BookshelfStatus.READ)}
