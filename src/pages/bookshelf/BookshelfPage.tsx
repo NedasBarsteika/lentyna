@@ -11,6 +11,7 @@ import { bookshelfService, booksService } from "../../api";
 function BookshelfPage() {
   const [bookshelfEntries, setBookshelfEntries] = useState<BookshelfEntry[]>([]);
   const [recommendations, setRecommendations] = useState<BookRecommendation[]>([]);
+  const [recommendationsLoaded, setRecommendationsLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | BookshelfStatus>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +55,8 @@ function BookshelfPage() {
       setRecommendations(data);
     } catch (err) {
       console.error("Failed to fetch recommendations", err);
+    } finally {
+      setRecommendationsLoaded(true);
     }
   };
 
@@ -101,7 +104,7 @@ function BookshelfPage() {
         )
       );
     } catch (err) {
-      alert("Nepavyko pakeisti būsenos");
+      alert("Nepavyko pakeisti įrašo tipo");
     }
   };
 
@@ -408,7 +411,7 @@ function BookshelfPage() {
         )}
 
         {/* Recommendations */}
-        {recommendations?.length > 0 && (
+        {recommendations?.length > 0 ? (
           <div className="mt-12">
             <h2 className="text-3xl font-bold mb-6">
               Rekomenduojamos knygos jums
@@ -442,6 +445,12 @@ function BookshelfPage() {
               ))}
             </div>
           </div>
+        ) : (
+          recommendationsLoaded && (
+            <div className="mt-12 text-gray-600">
+              nebuvo pateikta jokių rekomendacijų
+            </div>
+          )
         )}
       </motion.div>
 

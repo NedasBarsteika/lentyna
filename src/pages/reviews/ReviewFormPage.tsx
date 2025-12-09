@@ -52,7 +52,7 @@ function ReviewFormPage() {
         });
       }
     } catch (err) {
-      setError("Nepavyko užkrauti atsiliepimo");
+      setError("Nepavyko užkrauti komentaro");
     }
   };
 
@@ -71,7 +71,7 @@ function ReviewFormPage() {
     setError(null);
 
     if (!formData.komentaro_tekstas.trim()) {
-      setError("Parašykite atsiliepimą");
+      setError("Parašykite komentarą");
       return;
     }
 
@@ -83,14 +83,14 @@ function ReviewFormPage() {
           komentaro_tekstas: formData.komentaro_tekstas,
           vertinimas: formData.vertinimas,
         });
-        alert("Atsiliepimas sėkmingai atnaujintas!");
+        alert("Komentaras sėkmingai atnaujintas!");
       } else {
         await reviewsService.create({
           KnygaId: bookId,
           komentaro_tekstas: formData.komentaro_tekstas,
           vertinimas: formData.vertinimas,
         });
-        alert("Atsiliepimas sėkmingai paskelbtas!");
+        alert("Komentaras sėkmingai paskelbtas!");
       }
       navigate(`/knygos/${bookId}`);
     } catch (err: any) {
@@ -163,7 +163,7 @@ function ReviewFormPage() {
 
           <div>
             <label className="block font-semibold mb-2">
-              Jūsų atsiliepimas *
+              Jūsų komentaras *
             </label>
             <textarea
               name="komentaro_tekstas"
@@ -185,11 +185,7 @@ function ReviewFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading
-                ? "Saugoma..."
-                : isEditMode
-                  ? "Atnaujinti"
-                  : "Paskelbti atsiliepimą"}
+              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Paskelbti komentarą"}
             </button>
             <button
               type="button"
