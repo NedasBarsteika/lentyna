@@ -94,7 +94,7 @@ function ReviewFormPage() {
       }
       navigate(`/knygos/${bookId}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Nepavyko išsaugoti atsiliepimo");
+      setError(err.response?.data?.message || "Nepavyko išsaugoti komentaro");
     } finally {
       setLoading(false);
     }

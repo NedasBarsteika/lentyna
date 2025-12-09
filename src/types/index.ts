@@ -191,7 +191,7 @@ export interface BookSearchDto {
   NuotaikuIds?: string[];
 }
 
-// Review / Komentaras (knygos atsiliepimas)
+// Review / Komentaras (knygos komentaras)
 export interface Review {
   Id: string;
   komentaro_tekstas: string;

@@ -78,13 +78,13 @@ function BookDetailsPage() {
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (window.confirm("Ar tikrai norite ištrinti šį atsiliepimą?")) {
+    if (window.confirm("Ar tikrai norite ištrinti šį komentarą?")) {
       try {
         await reviewsService.delete(reviewId);
         setReviews(reviews.filter((r) => r.Id !== reviewId));
         alert("Ištrinta");
       } catch (err) {
-        alert("Nepavyko ištrinti atsiliepimo");
+        alert("Nepavyko ištrinti komentaro");
       }
     }
   };
@@ -288,13 +288,13 @@ function BookDetailsPage() {
                 to={`/knygos/${id}/atsiliepimas`}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
-                Rašyti atsiliepimą
+                Rašyti komentarą
               </Link>
             )}
           </div>
 
           {reviews.length === 0 && !DIKomentaras ? (
-            <p className="text-gray-600">Atsiliepimų dar nėra</p>
+            <p className="text-gray-600">Komentarų dar nėra</p>
           ) : (
             <div className="space-y-4">
               {/* AI Generated Comment */}

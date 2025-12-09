@@ -22,7 +22,7 @@ function HomePage() {
             Sveiki atvykę į Lentyną.lt
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-8">
-            Dalinkitės nuomone apie knygas, rašykite atsiliepimus ir atraskite bendraminčius
+            Dalinkitės nuomone apie knygas, rašykite komentarus ir atraskite bendraminčius
           </p>
           <div className="flex gap-4">
             <a
@@ -67,7 +67,7 @@ function HomePage() {
               <div className="text-center">
                 <div className="text-4xl mb-3">⭐</div>
                 <h3 className="font-semibold text-lg mb-2">Vertinkite knygas</h3>
-                <p className="text-gray-600 text-sm">Rašykite atsiliepimus ir dalinatės įspūdžiais</p>
+                <p className="text-gray-600 text-sm">Rašykite komentarus ir dalinatės įspūdžiais</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-3">📖</div>
