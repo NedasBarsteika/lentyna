@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { forumService } from "../../api";
+import { nuomoniuForumasService } from "../../api";
 
 function TopicFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -26,7 +26,7 @@ function TopicFormPage() {
 
   const fetchTopic = async () => {
     try {
-      const topic = await forumService.getTopicById(id!);
+      const topic = await nuomoniuForumasService.getTopicById(id!);
       setFormData({
         pavadinimas: topic.pavadinimas,
         tekstas: topic.tekstas,
@@ -55,11 +55,11 @@ function TopicFormPage() {
 
     try {
       if (isEditMode && id) {
-        await forumService.updateTopic(id, formData);
+        await nuomoniuForumasService.updateTopic(id, formData);
         alert("Tema sėkmingai atnaujinta!");
         navigate(`/forumas/tema/${id}`);
       } else {
-        const response = await forumService.createTopic(formData);
+        const response = await nuomoniuForumasService.createTopic(formData);
         alert("Tema sėkmingai sukurta!");
         navigate(`/forumas/tema/${response.Id}`);
       }

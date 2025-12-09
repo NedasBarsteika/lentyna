@@ -329,7 +329,7 @@ function BookDetailsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-4">
                       <span className="font-semibold">
-                        {review.Naudotojas?.slapyvardis || "Nežinomas"}
+                        {review.naudotojo_slapyvardis || "Nežinomas"}
                       </span>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (

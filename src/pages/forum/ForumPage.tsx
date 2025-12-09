@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { ForumTopic, Voting } from "../../types";
-import { forumService, votingService } from "../../api";
+import { nuomoniuForumasService, knyguKlubasService } from "../../api";
 
 function ForumPage() {
   const [topics, setTopics] = useState<ForumTopic[]>([]);
@@ -34,7 +34,7 @@ function ForumPage() {
   const fetchTopics = async (pageNum: number = 1) => {
     setLoading(true);
     try {
-      const response = await forumService.getAllTopics({
+      const response = await nuomoniuForumasService.getAllTopics({
         page: pageNum,
         pageSize: 20,
       });
@@ -51,7 +51,7 @@ function ForumPage() {
 
   const fetchCurrentVoting = async () => {
     try {
-      const voting = await votingService.getCurrent();
+      const voting = await knyguKlubasService.getCurrent();
       setCurrentVoting(voting);
     } catch (err) {
       console.error("Failed to fetch current voting", err);

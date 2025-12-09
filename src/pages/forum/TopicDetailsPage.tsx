@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { ForumTopic } from "../../types";
-import { forumService } from "../../api";
+import { nuomoniuForumasService } from "../../api";
 import { UserRole } from "../../types";
 
 function TopicDetailsPage() {
@@ -32,7 +32,7 @@ function TopicDetailsPage() {
 
   const fetchTopic = async () => {
     try {
-      const data = await forumService.getTopicById(id!);
+      const data = await nuomoniuForumasService.getTopicById(id!);
       setTopic(data);
     } catch (err) {
       setError("Nepavyko užkrauti temos");
@@ -45,7 +45,7 @@ function TopicDetailsPage() {
   const handleDeleteTopic = async () => {
     if (window.confirm("Ar tikrai norite ištrinti šią temą?")) {
       try {
-        await forumService.deleteTopic(id!);
+        await nuomoniuForumasService.deleteTopic(id!);
         navigate("/forumas");
       } catch (err) {
         alert("Nepavyko ištrinti temos");

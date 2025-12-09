@@ -5,16 +5,17 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import type { Voting, WeatherForecast } from "../../types";
-import { votingService } from "../../api";
+import { knyguKlubasService } from "../../api";
 
 function BookClubPage() {
   const [voting, setVoting] = useState<Voting | null>(null);
-  console.log(voting);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [weatherForecast, setWeatherForecast] =
     useState<WeatherForecast | null>(null);
+  const [votedBookId, setVotedBookId] = useState<string | null>(null);
+  const [hasVoted, setHasVoted] = useState(false);
 
   // Calculate meeting date as 2 days after voting end date
   const getMeetingDate = (votingEndDate: string): Date => {
@@ -25,15 +26,27 @@ function BookClubPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    setIsAuthenticated(!!token);
+    const authenticated = !!token;
+    setIsAuthenticated(authenticated);
 
-    fetchCurrentVoting();
+    fetchCurrentVoting(authenticated);
   }, []);
 
-  const fetchCurrentVoting = async () => {
+  const fetchCurrentVoting = async (authenticated: boolean) => {
     try {
-      const data = await votingService.getCurrent();
+      const data = await knyguKlubasService.getCurrent();
       setVoting(data);
+
+      // If user is authenticated and voting is active, check if they voted
+      if (authenticated && data?.Id && !data.uzbaigtas) {
+        try {
+          const voteStatus = await knyguKlubasService.getMyVote(data.Id);
+          setHasVoted(voteStatus.balsuota);
+          setVotedBookId(voteStatus.knygaId);
+        } catch {
+          // Ignore errors when fetching vote status (user might not have voted)
+        }
+      }
     } catch (err) {
       setError("Nepavyko užkrauti balsavimo");
       console.error(err);
@@ -44,7 +57,7 @@ function BookClubPage() {
 
   const fetchWeatherForecast = async (votingId: string) => {
     try {
-      const forecast = await votingService.getWeatherForecast(votingId);
+      const forecast = await knyguKlubasService.getWeatherForecast(votingId);
       setWeatherForecast(forecast);
     } catch (err) {
       console.error("Failed to fetch weather forecast", err);
@@ -52,15 +65,16 @@ function BookClubPage() {
   };
 
   const handleVote = async (knygaId: string) => {
-    if (!voting?.Id) return;
+    if (!voting?.Id || hasVoted) return;
 
     try {
-      await votingService.vote({
+      await knyguKlubasService.vote({
         BalsavimasId: voting.Id,
         KnygaId: knygaId,
       });
-      fetchCurrentVoting();
-      alert("Balsas užskaitytas!");
+      setHasVoted(true);
+      setVotedBookId(knygaId);
+      fetchCurrentVoting(isAuthenticated);
     } catch (err) {
       alert("Nepavyko balsuoti");
     }
@@ -133,53 +147,77 @@ function BookClubPage() {
 
           {!voting.uzbaigtas && (
             <div>
-              <h3 className="font-semibold mb-3 text-lg text-white">
-                Balsuokite už knygą šiai savaitei:
-              </h3>
+              {hasVoted ? (
+                <div className="bg-green-100 border border-green-400 text-green-800 rounded-lg p-4 mb-4">
+                  <p className="font-semibold">Jūs jau balsavote!</p>
+                  <p className="text-sm">Jūsų balsas buvo užregistruotas. Laukite balsavimo pabaigos.</p>
+                </div>
+              ) : (
+                <h3 className="font-semibold mb-3 text-lg text-white">
+                  Balsuokite už knygą šiai savaitei:
+                </h3>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {voting?.nominuotos_knygos?.map((nomination) => (
-                  <div
-                    key={nomination.Id}
-                    className="bg-white rounded-lg p-3 text-gray-900 shadow-md"
-                  >
-                    <Link
-                      to={`/knygos/${nomination.Id}`}
-                      className="block mb-2"
+                {voting?.nominuotos_knygos?.map((nomination) => {
+                  const isVotedBook = votedBookId === nomination.Id;
+                  return (
+                    <div
+                      key={nomination.Id}
+                      className={`rounded-lg p-3 text-gray-900 shadow-md ${
+                        isVotedBook
+                          ? "bg-green-100 ring-4 ring-green-500"
+                          : "bg-white"
+                      }`}
                     >
-                      {nomination.virselio_nuotrauka ? (
-                        <img
-                          src={nomination.virselio_nuotrauka}
-                          alt={nomination.knygos_pavadinimas}
-                          className="w-full h-48 object-cover rounded-lg mb-2 hover:opacity-90 transition-opacity"
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-white bg-opacity-40 rounded-lg mb-2 flex items-center justify-center">
-                          <span className="text-4xl">📚</span>
+                      {isVotedBook && (
+                        <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded mb-2 text-center">
+                          Jūsų pasirinkimas
                         </div>
                       )}
-                      <p className="font-semibold text-sm hover:underline line-clamp-2">
-                        {nomination.knygos_pavadinimas}
-                      </p>
-                      <p className="text-xs opacity-90 mt-1">
-                        {nomination.autorius_vardas || "Nežinomas autorius"}
-                      </p>
-                    </Link>
-                    <div className="text-center mt-2">
-                      <p className="text-xl font-bold mb-2">
-                        {nomination.balsu_skaicius} balsai
-                      </p>
-                      {isAuthenticated && !voting.uzbaigtas && (
-                        <button
-                          onClick={() => handleVote(nomination.Id)}
-                          className="w-full px-3 py-1 bg-white text-purple-600 rounded hover:bg-gray-100 font-semibold"
-                        >
-                          Balsuoti
-                        </button>
-                      )}
+                      <Link
+                        to={`/knygos/${nomination.Id}`}
+                        className="block mb-2"
+                      >
+                        {nomination.virselio_nuotrauka ? (
+                          <img
+                            src={nomination.virselio_nuotrauka}
+                            alt={nomination.knygos_pavadinimas}
+                            className="w-full h-48 object-cover rounded-lg mb-2 hover:opacity-90 transition-opacity"
+                          />
+                        ) : (
+                          <div className="w-full h-48 bg-gray-200 rounded-lg mb-2 flex items-center justify-center">
+                            <span className="text-4xl">📚</span>
+                          </div>
+                        )}
+                        <p className="font-semibold text-sm hover:underline line-clamp-2">
+                          {nomination.knygos_pavadinimas}
+                        </p>
+                        <p className="text-xs opacity-90 mt-1">
+                          {nomination.autorius_vardas || "Nežinomas autorius"}
+                        </p>
+                      </Link>
+                      <div className="text-center mt-2">
+                        <p className="text-xl font-bold mb-2">
+                          {nomination.balsu_skaicius} balsai
+                        </p>
+                        {isAuthenticated && !voting.uzbaigtas && !hasVoted && (
+                          <button
+                            onClick={() => handleVote(nomination.Id)}
+                            className="w-full px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 font-semibold transition-colors"
+                          >
+                            Balsuoti
+                          </button>
+                        )}
+                        {isAuthenticated && hasVoted && !isVotedBook && (
+                          <p className="text-sm text-gray-500 italic">
+                            Jau balsavote
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

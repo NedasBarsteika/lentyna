@@ -201,8 +201,9 @@ export interface Review {
   NaudotojasId: string;
   KnygaId?: string;
   TemaId?: string;
-  // Populated
-  Naudotojas?: User;
+  // Flattened user fields from backend
+  naudotojo_slapyvardis?: string;
+  naudotojo_nuotrauka?: string;
 }
 
 export interface ReviewCreateDto {
@@ -346,6 +347,12 @@ export interface FollowDto {
 // Weather Forecast
 export interface WeatherForecast {
   oro_prognoze: string;
+}
+
+// User Vote Status
+export interface UserVoteStatus {
+  balsuota: boolean;
+  knygaId: string | null;
 }
 
 // Book Recommendation (backend grąžina tiesiog Book objektus)

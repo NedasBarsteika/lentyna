@@ -1,4 +1,4 @@
-// src/api/forumService.ts
+// src/api/nuomoniuForumasService.ts
 import { api } from "./config";
 import type { PaginatedResponse } from "./config";
 import type {
@@ -12,45 +12,45 @@ export interface TopicsQueryParams {
   pageSize?: number;
 }
 
-export const forumService = {
-  // GET /api/temos
+export const nuomoniuForumasService = {
+  // GET /api/nuomoniu-forumas
   getAllTopics: async (
     params?: TopicsQueryParams,
   ): Promise<PaginatedResponse<ForumTopic>> => {
-    const response = await api.get<PaginatedResponse<ForumTopic>>("/temos", {
+    const response = await api.get<PaginatedResponse<ForumTopic>>("/nuomoniu-forumas", {
       params,
     });
     return response.data;
   },
 
-  // GET /api/temos/{id}
+  // GET /api/nuomoniu-forumas/{id}
   getTopicById: async (id: string): Promise<ForumTopic> => {
-    const response = await api.get<ForumTopic>(`/temos/${id}`);
+    const response = await api.get<ForumTopic>(`/nuomoniu-forumas/${id}`);
     return response.data;
   },
 
-  // POST /api/temos
+  // POST /api/nuomoniu-forumas
   createTopic: async (data: ForumTopicCreateDto): Promise<ForumTopic> => {
-    const response = await api.post<ForumTopic>("/temos", data);
+    const response = await api.post<ForumTopic>("/nuomoniu-forumas", data);
     return response.data;
   },
 
-  // PUT /api/temos/{id}
+  // PUT /api/nuomoniu-forumas/{id}
   updateTopic: async (
     id: string,
     data: ForumTopicUpdateDto,
   ): Promise<ForumTopic> => {
-    const response = await api.put<ForumTopic>(`/temos/${id}`, data);
+    const response = await api.put<ForumTopic>(`/nuomoniu-forumas/${id}`, data);
     return response.data;
   },
 
-  // DELETE /api/temos/{id}
+  // DELETE /api/nuomoniu-forumas/{id}
   deleteTopic: async (id: string): Promise<void> => {
-    await api.delete(`/temos/${id}`);
+    await api.delete(`/nuomoniu-forumas/${id}`);
   },
 
-  // PUT /api/temos/{id}/prikabinti (moderator/admin)
+  // PUT /api/nuomoniu-forumas/{id}/prikabinti (moderator/admin)
   togglePinTopic: async (id: string): Promise<void> => {
-    await api.put(`/temos/${id}/prikabinti`);
+    await api.put(`/nuomoniu-forumas/${id}/prikabinti`);
   },
 };
