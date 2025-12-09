@@ -153,6 +153,7 @@ function BookFormPage() {
         };
 
         const createdBook = await booksService.create(bookData);
+        await authorsService.sendEmail(createdBook.Id);
         const bookId = createdBook.Id;
 
         // Phase 2: Upload image if selected (now we have book ID)

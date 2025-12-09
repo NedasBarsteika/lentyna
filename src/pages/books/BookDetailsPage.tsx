@@ -81,6 +81,7 @@ function BookDetailsPage() {
       try {
         await reviewsService.delete(reviewId);
         setReviews(reviews.filter((r) => r.Id !== reviewId));
+        alert("Ištrinta");
       } catch (err) {
         alert("Nepavyko ištrinti atsiliepimo");
       }

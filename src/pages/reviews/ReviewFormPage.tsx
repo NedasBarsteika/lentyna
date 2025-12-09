@@ -8,7 +8,10 @@ import type { Book } from "../../types";
 import { booksService, reviewsService } from "../../api";
 
 function ReviewFormPage() {
-  const { bookId, reviewId } = useParams<{ bookId: string; reviewId?: string }>();
+  const { bookId, reviewId } = useParams<{
+    bookId: string;
+    reviewId?: string;
+  }>();
   const isEditMode = !!reviewId;
   const navigate = useNavigate();
 
@@ -41,7 +44,7 @@ function ReviewFormPage() {
   const fetchReview = async () => {
     try {
       const reviews = await reviewsService.getByBookId(bookId!);
-      const review = reviews.find(r => r.Id === reviewId);
+      const review = reviews.find((r) => r.Id === reviewId);
       if (review) {
         setFormData({
           komentaro_tekstas: review.komentaro_tekstas,
@@ -109,11 +112,14 @@ function ReviewFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-2">
-          {isEditMode ? "Komentaro redagavimo langas" : "Komentaro sukūrimo langas"}
+          {isEditMode
+            ? "Komentaro redagavimo langas"
+            : "Komentaro sukūrimo langas"}
         </h1>
         {book && (
           <p className="text-xl text-gray-600 mb-6">
-            Apie knygą: <span className="font-semibold">{book.knygos_pavadinimas}</span>
+            Apie knygą:{" "}
+            <span className="font-semibold">{book.knygos_pavadinimas}</span>
           </p>
         )}
 
@@ -149,7 +155,9 @@ function ReviewFormPage() {
                   </span>
                 ))}
               </div>
-              <span className="text-2xl font-bold w-8">{formData.vertinimas}</span>
+              <span className="text-2xl font-bold w-8">
+                {formData.vertinimas}
+              </span>
             </div>
           </div>
 
@@ -177,7 +185,11 @@ function ReviewFormPage() {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
             >
-              {loading ? "Saugoma..." : isEditMode ? "Atnaujinti" : "Paskelbti atsiliepimą"}
+              {loading
+                ? "Saugoma..."
+                : isEditMode
+                  ? "Atnaujinti"
+                  : "Paskelbti atsiliepimą"}
             </button>
             <button
               type="button"
