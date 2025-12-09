@@ -6,12 +6,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ImageUpload from "../../components/ImageUpload";
 import type { Author, Genre } from "../../types";
-import {
-  booksService,
-  authorsService,
-  genresService,
-  uploadsService,
-} from "../../api";
+import { booksService, authorsService, uploadsService } from "../../api";
 
 function BookFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -46,7 +41,7 @@ function BookFormPage() {
     try {
       const [authorsResponse, genresData] = await Promise.all([
         authorsService.getAll(),
-        genresService.getAll(),
+        booksService.getGenres(),
       ]);
       setAuthors(authorsResponse.items);
       setGenres(genresData);

@@ -283,8 +283,6 @@ export interface ForumTopic {
   // Plokšti autoriaus laukai iš backend
   autorius_slapyvardis?: string;
   autorius_nuotrauka?: string;
-  komentaru_skaicius?: number;
-  komentarai?: ForumComment[];
 }
 
 export interface ForumTopicCreateDto {
@@ -295,26 +293,6 @@ export interface ForumTopicCreateDto {
 export interface ForumTopicUpdateDto {
   pavadinimas?: string;
   tekstas?: string;
-}
-
-// Forum Comment (same as Review but for topics)
-export interface ForumComment {
-  Id: string;
-  komentaro_tekstas: string;
-  komentaro_data: string;
-  vertinimas: number;
-  redagavimo_data?: string;
-  NaudotojasId: string;
-  TemaId: string;
-  KnygaId?: string | null;
-  // Plokšti naudotojo laukai iš backend
-  naudotojo_slapyvardis?: string;
-  naudotojo_nuotrauka?: string;
-}
-
-export interface ForumCommentCreateDto {
-  komentaro_tekstas: string;
-  vertinimas: number;
 }
 
 // Voting / Balsavimas

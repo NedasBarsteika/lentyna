@@ -8,7 +8,6 @@ import { authorsService, uploadsService } from "../../api";
 import ImageUpload from "../../components/ImageUpload";
 import type { Citation, CitationCreateDto } from "../../types";
 
-
 function AuthorFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -48,8 +47,8 @@ function AuthorFormPage() {
       setFormData({
         vardas: author.vardas,
         pavarde: author.pavarde,
-        gimimo_metai: author.gimimo_metai || "",
-        mirties_data: author.mirties_data || "",
+        gimimo_metai: (author.gimimo_metai || "").split("T")[0],
+        mirties_data: (author.mirties_data || "").split("T")[0],
         curiculum_vitae: author.curiculum_vitae || "",
         nuotrauka: author.nuotrauka || "",
         tautybe: author.tautybe || "",
@@ -77,19 +76,26 @@ function AuthorFormPage() {
     if (currentCitation.tekstas == "") {
       return;
     }
-    setCitations([...citations, {AutoriusId: "", citatos_tekstas: currentCitation.tekstas, citatos_saltinis: currentCitation.saltinis, citatos_data: currentCitation.data, Id: Math.random().toString()}])
+    setCitations([
+      ...citations,
+      {
+        AutoriusId: "",
+        citatos_tekstas: currentCitation.tekstas,
+        citatos_saltinis: currentCitation.saltinis,
+        citatos_data: currentCitation.data,
+        Id: Math.random().toString(),
+      },
+    ]);
     setCurrentCitation({
       tekstas: "",
       saltinis: "",
       data: "",
-    })
+    });
   };
 
-  const deleteCitation = (
-    id: string,
-  ) => {
-    setDeletions([...deletions, id])
-    setCitations(citations.filter(c => c.Id != id))
+  const deleteCitation = (id: string) => {
+    setDeletions([...deletions, id]);
+    setCitations(citations.filter((c) => c.Id != id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,7 +116,7 @@ function AuthorFormPage() {
     setLoading(true);
 
     try {
-      const authorData = {
+      var authorData = {
         vardas: formData.vardas,
         pavarde: formData.pavarde,
         gimimo_metai: formData.gimimo_metai || undefined,
@@ -119,15 +125,19 @@ function AuthorFormPage() {
         nuotrauka: formData.nuotrauka || undefined,
         tautybe: formData.tautybe || undefined,
       };
+      console.log(formData.nuotrauka);
 
       if (isEditMode && id) {
-        // Redagavimo režimas: pirmiau atnaujinti autorių, tada įkelti nuotrauką jei reikia
-        await authorsService.update(id, authorData);
-
-        // Įkelti nuotrauką, jei pasirinkta nauja
+        var authorImageUrl = null;
         if (authorImage) {
-          await uploadsService.uploadAuthorPhoto(id, authorImage);
+          authorImageUrl = await uploadsService.uploadAuthorPhoto(
+            id,
+            authorImage,
+          );
+          authorData.nuotrauka = authorImageUrl;
         }
+
+        await authorsService.update(id, authorData);
 
         for (var i of deletions) {
           authorsService.deletecitata(i);
@@ -141,10 +151,11 @@ function AuthorFormPage() {
 
           var translated: CitationCreateDto = {
             citatos_tekstas: citation.citatos_tekstas,
-            citatos_data: citation.citatos_data == "" ? undefined : citation.citatos_data,
+            citatos_data:
+              citation.citatos_data == "" ? undefined : citation.citatos_data,
             citatos_saltinis: citation.citatos_saltinis,
             AutoriusId: id,
-          }
+          };
           await authorsService.createcitata(translated);
         }
 
@@ -156,16 +167,22 @@ function AuthorFormPage() {
 
         // Įkelti nuotrauką, jei pasirinkta
         if (authorImage) {
-          await uploadsService.uploadAuthorPhoto(response.Id, authorImage);
+          const authorImageUrl = await uploadsService.uploadAuthorPhoto(
+            response.Id,
+            authorImage,
+          );
+          authorData.nuotrauka = authorImageUrl;
+          await authorsService.update(response.Id, authorData);
         }
 
         for (var citation of citations) {
           var translated: CitationCreateDto = {
             citatos_tekstas: citation.citatos_tekstas,
-            citatos_data: citation.citatos_data == "" ? undefined : citation.citatos_data,
+            citatos_data:
+              citation.citatos_data == "" ? undefined : citation.citatos_data,
             citatos_saltinis: citation.citatos_saltinis,
-            AutoriusId: response.Id
-          }
+            AutoriusId: response.Id,
+          };
           authorsService.createcitata(translated);
         }
         alert("Autorius sėkmingai sukurtas!");
@@ -190,7 +207,9 @@ function AuthorFormPage() {
         className="flex-grow max-w-screen-lg mx-auto w-full p-6"
       >
         <h1 className="text-4xl font-bold mb-6">
-          {isEditMode ? "Autoriaus redagavimo langas" : "Autoriaus pridėjimo langas"}
+          {isEditMode
+            ? "Autoriaus redagavimo langas"
+            : "Autoriaus pridėjimo langas"}
         </h1>
 
         {error && (
@@ -280,11 +299,13 @@ function AuthorFormPage() {
             />
           </div>
 
-
           <div className="space-y-3">
-              {citations && citations.map((citata) => (
+            {citations &&
+              citations.map((citata) => (
                 <div>
-                  <p className="text-gray-600 mb-2 line-clamp-2">{citata.citatos_tekstas}</p>
+                  <p className="text-gray-600 mb-2 line-clamp-2">
+                    {citata.citatos_tekstas}
+                  </p>
                   <div className="flex items-center text-sm text-gray-500">
                     <span className="mr-4">
                       {citata?.citatos_saltinis || "Nežinomas"}
@@ -293,22 +314,19 @@ function AuthorFormPage() {
                       {citata.citatos_data || "Nežinoma data"}
                     </span>
                     <span>
-                    <button
-              type="button"
-               onClick={() =>
-                deleteCitation(citata.Id)
-              }
-              disabled={loading}
-              className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-            >Ištrinti</button>
-                  </span>
+                      <button
+                        type="button"
+                        onClick={() => deleteCitation(citata.Id)}
+                        disabled={loading}
+                        className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+                      >
+                        Ištrinti
+                      </button>
+                    </span>
                   </div>
                 </div>
-                
               ))}
-              
-            </div>
-
+          </div>
 
           <div>
             <label className="block font-semibold mb-2">Citata</label>
@@ -320,44 +338,41 @@ function AuthorFormPage() {
               className="w-full px-4 py-2 border rounded-lg"
               placeholder="Parašykite autoriaus citatą..."
             />
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block font-semibold mb-2">Šaltinis</label>
-              <input
-                type="text"
-                name="saltinis"
-                value={currentCitation.saltinis}
-                onChange={handleCitationChange}
-                className="w-full px-4 py-2 border rounded-lg"
-                maxLength={100}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block font-semibold mb-2">Šaltinis</label>
+                <input
+                  type="text"
+                  name="saltinis"
+                  value={currentCitation.saltinis}
+                  onChange={handleCitationChange}
+                  className="w-full px-4 py-2 border rounded-lg"
+                  maxLength={100}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Data</label>
+                <input
+                  type="date"
+                  name="data"
+                  value={currentCitation.data}
+                  onChange={handleCitationChange}
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  createCitation();
+                }}
+                disabled={loading}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+              >
+                Pridėti citatą
+              </button>
             </div>
-
-            <div>
-              <label className="block font-semibold mb-2">Data</label>
-              <input
-                type="date"
-                name="data"
-                value={currentCitation.data}
-                onChange={handleCitationChange}
-                className="w-full px-4 py-2 border rounded-lg"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={()=>{createCitation()}}
-              disabled={loading}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-            >
-              Pridėti citatą
-            </button>
           </div>
-          </div>
-
-
-
-
-
 
           <ImageUpload
             value={authorImage}
@@ -393,3 +408,4 @@ function AuthorFormPage() {
 }
 
 export default AuthorFormPage;
+

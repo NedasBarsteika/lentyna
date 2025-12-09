@@ -1,10 +1,10 @@
 // src/pages/books/BookDetailsPage.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import type { Book, Review } from "../../types";
+import type { AIComment, AIReview, Book, Review } from "../../types";
 import { booksService, reviewsService, bookshelfService } from "../../api";
 import { UserRole, BookshelfStatus } from "../../types";
 
@@ -20,8 +20,13 @@ function BookDetailsPage() {
   const [isEditor, setIsEditor] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [DIKomentaras, setAIComment] = useState<AIComment | null>(null);
+  const didFetch = useRef(false);
 
   useEffect(() => {
+    if (didFetch.current) return;
+    didFetch.current = true;
+
     const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     setIsAuthenticated(!!token);
@@ -51,6 +56,10 @@ function BookDetailsPage() {
     try {
       const data = await reviewsService.getByBookId(id!);
       setReviews(data);
+      if (!DIKomentaras) {
+        const koment = await reviewsService.getDIComment(id!);
+        setAIComment(koment);
+      }
     } catch (err) {
       console.error("Failed to fetch reviews", err);
     }
@@ -71,7 +80,7 @@ function BookDetailsPage() {
     if (window.confirm("Ar tikrai norite ištrinti šį atsiliepimą?")) {
       try {
         await reviewsService.delete(reviewId);
-        setReviews(reviews.filter(r => r.Id !== reviewId));
+        setReviews(reviews.filter((r) => r.Id !== reviewId));
       } catch (err) {
         alert("Nepavyko ištrinti atsiliepimo");
       }
@@ -82,11 +91,11 @@ function BookDetailsPage() {
     try {
       await bookshelfService.create({
         KnygaId: id!,
-        tipas: status
+        tipas: status,
       });
-      alert('Knyga pridėta į jūsų sąrašą!');
+      alert("Knyga pridėta į jūsų sąrašą!");
     } catch (err) {
-      alert('Nepavyko pridėti knygos į sąrašą');
+      alert("Nepavyko pridėti knygos į sąrašą");
     }
   };
 
@@ -159,7 +168,9 @@ function BookDetailsPage() {
                       Skaitomos
                     </button>
                     <button
-                      onClick={() => addToBookshelf(BookshelfStatus.WANT_TO_READ)}
+                      onClick={() =>
+                        addToBookshelf(BookshelfStatus.WANT_TO_READ)
+                      }
                       className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
                     >
                       Norimos skaityti
@@ -172,7 +183,9 @@ function BookDetailsPage() {
             {/* Book Details */}
             <div className="md:col-span-2">
               <div className="flex justify-between items-start mb-4">
-                <h1 className="text-4xl font-bold">{book.knygos_pavadinimas}</h1>
+                <h1 className="text-4xl font-bold">
+                  {book.knygos_pavadinimas}
+                </h1>
                 {isEditor && (
                   <div className="flex gap-2">
                     <Link
@@ -195,24 +208,31 @@ function BookDetailsPage() {
                 to={`/autoriai/${book.AutoriusId}`}
                 className="text-xl text-blue-600 hover:underline mb-2 block"
               >
-                {book.autorius_vardas || (book.Autorius ? `${book.Autorius.vardas} ${book.Autorius.pavarde}` : 'Nežinomas autorius')}
+                {book.autorius_vardas ||
+                  (book.Autorius
+                    ? `${book.Autorius.vardas} ${book.Autorius.pavarde}`
+                    : "Nežinomas autorius")}
               </Link>
 
               <p className="text-gray-600 mb-4">
-                Leidimo metai: {book.leidimo_metai ? new Date(book.leidimo_metai).getFullYear() : 'Nežinoma'}
+                Leidimo metai:{" "}
+                {book.leidimo_metai
+                  ? new Date(book.leidimo_metai).getFullYear()
+                  : "Nežinoma"}
               </p>
 
-              {book.vidutinis_vertinimas !== undefined && book.vidutinis_vertinimas > 0 && (
-                <div className="flex items-center mb-4">
-                  <span className="text-yellow-500 text-2xl mr-2">⭐</span>
-                  <span className="text-2xl font-bold">
-                    {book.vidutinis_vertinimas.toFixed(1)}
-                  </span>
-                  <span className="text-gray-600 ml-2">
-                    ({book.komentaru_skaicius} komentarai)
-                  </span>
-                </div>
-              )}
+              {book.vidutinis_vertinimas !== undefined &&
+                book.vidutinis_vertinimas > 0 && (
+                  <div className="flex items-center mb-4">
+                    <span className="text-yellow-500 text-2xl mr-2">⭐</span>
+                    <span className="text-2xl font-bold">
+                      {book.vidutinis_vertinimas.toFixed(1)}
+                    </span>
+                    <span className="text-gray-600 ml-2">
+                      ({book.komentaru_skaicius} komentarai)
+                    </span>
+                  </div>
+                )}
 
               <div className="mb-4">
                 <h3 className="font-semibold mb-2">Žanras:</h3>
@@ -250,7 +270,7 @@ function BookDetailsPage() {
               <div>
                 <h3 className="font-semibold mb-2">Aprašymas:</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  {book.aprasymas || 'Aprašymas nepateiktas'}
+                  {book.aprasymas || "Aprašymas nepateiktas"}
                 </p>
               </div>
             </div>
@@ -271,12 +291,12 @@ function BookDetailsPage() {
             )}
           </div>
 
-          {reviews.length === 0 && !book?.di_komentaras ? (
+          {reviews.length === 0 && !DIKomentaras ? (
             <p className="text-gray-600">Atsiliepimų dar nėra</p>
           ) : (
             <div className="space-y-4">
               {/* AI Generated Comment */}
-              {book?.di_komentaras && (
+              {DIKomentaras && (
                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-md p-6 border-2 border-purple-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-4">
@@ -284,14 +304,18 @@ function BookDetailsPage() {
                         🤖 DI sugeneruotas komentaras
                       </span>
                       <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full">
-                        {book.di_komentaras.modelis}
+                        {DIKomentaras.modelis}
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      {new Date(book.di_komentaras.sugeneravimo_data).toLocaleDateString('lt-LT')}
+                      {new Date(
+                        DIKomentaras.sugeneravimo_data,
+                      ).toLocaleDateString("lt-LT")}
                     </span>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{book.di_komentaras.tekstas}</p>
+                  <p className="text-gray-700 leading-relaxed">
+                    {DIKomentaras.tekstas}
+                  </p>
                 </div>
               )}
 
@@ -341,7 +365,9 @@ function BookDetailsPage() {
                       )}
                     </div>
                     <span className="text-sm text-gray-500">
-                      {new Date(review.komentaro_data).toLocaleDateString('lt-LT')}
+                      {new Date(review.komentaro_data).toLocaleDateString(
+                        "lt-LT",
+                      )}
                     </span>
                   </div>
                   <p className="text-gray-700">{review.komentaro_tekstas}</p>
