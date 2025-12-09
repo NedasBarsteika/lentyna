@@ -5,10 +5,10 @@ export const UserRole = {
   ADMIN: "admin",
   MODERATOR: "moderatorius",
   EDITOR: "redaktorius",
-  READER: "naudotojas"
+  READER: "naudotojas",
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 // Role to numeric mapping for backend API
 export const roleToNumber = (role: string): number => {
@@ -44,12 +44,13 @@ export const numberToRole = (num: number): string => {
 
 // Bookshelf Status (matching backend enum values)
 export const BookshelfStatus = {
-  READ: 0,        // skaityta
-  READING: 2,     // skaitoma
-  WANT_TO_READ: 1 // norima_skaityti
+  READ: 0, // skaityta
+  READING: 2, // skaitoma
+  WANT_TO_READ: 1, // norima_skaityti
 } as const;
 
-export type BookshelfStatus = typeof BookshelfStatus[keyof typeof BookshelfStatus];
+export type BookshelfStatus =
+  (typeof BookshelfStatus)[keyof typeof BookshelfStatus];
 
 // ============ Backend Response Types ============
 
@@ -94,12 +95,12 @@ export interface Genre {
 export interface Mood {
   Id: string;
   pavadinimas: string;
-  zanrai?: Genre[];  // Array of genres associated with this mood
+  zanrai?: Genre[]; // Array of genres associated with this mood
 }
 
 export interface MoodCreateDto {
   pavadinimas: string;
-  zanrasIds: string[];  // Array of genre IDs
+  zanrasIds: string[]; // Array of genre IDs
 }
 
 // Author / Autorius
@@ -282,8 +283,6 @@ export interface ForumTopic {
   // Plokšti autoriaus laukai iš backend
   autorius_slapyvardis?: string;
   autorius_nuotrauka?: string;
-  komentaru_skaicius?: number;
-  komentarai?: ForumComment[];
 }
 
 export interface ForumTopicCreateDto {
@@ -296,34 +295,21 @@ export interface ForumTopicUpdateDto {
   tekstas?: string;
 }
 
-// Forum Comment (same as Review but for topics)
-export interface ForumComment {
-  Id: string;
-  komentaro_tekstas: string;
-  komentaro_data: string;
-  vertinimas: number;
-  redagavimo_data?: string;
-  NaudotojasId: string;
-  TemaId: string;
-  KnygaId?: string | null;
-  // Plokšti naudotojo laukai iš backend
-  naudotojo_slapyvardis?: string;
-  naudotojo_nuotrauka?: string;
-}
-
-export interface ForumCommentCreateDto {
-  komentaro_tekstas: string;
-  vertinimas: number;
-}
-
 // Voting / Balsavimas
 export interface Voting {
   Id: string;
   balsavimo_pradzia: string;
   balsavimo_pabaiga: string;
-  isrinkta_knyga_id?: string;
+  susitikimo_data?: string;
+  isrinkta_knyga?: {
+    Id: string;
+    knygos_pavadinimas: string;
+    autorius_vardas?: string;
+    virselio_nuotrauka?: string;
+    balsu_skaicius: number;
+  };
   uzbaigtas: boolean;
-  nominuotos_knygos?: VotingBook[];
+  nominuotos_knygos: VotingBook[];
 }
 
 export interface VotingBook {

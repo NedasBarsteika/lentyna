@@ -34,7 +34,10 @@ function ForumPage() {
   const fetchTopics = async (pageNum: number = 1) => {
     setLoading(true);
     try {
-      const response = await forumService.getAllTopics({ page: pageNum, pageSize: 20 });
+      const response = await forumService.getAllTopics({
+        page: pageNum,
+        pageSize: 20,
+      });
       setTopics(response.items);
       setTotalPages(response.totalPages);
       setPage(response.page);
@@ -55,8 +58,7 @@ function ForumPage() {
     }
   };
 
-  const pinnedTopics = topics.filter((t) => t.prikabinta);
-  const regularTopics = topics.filter((t) => !t.prikabinta);
+  const regularTopics = topics;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -94,44 +96,13 @@ function ForumPage() {
             <p className="text-gray-600 mb-2">
               Dalyvaukite balsavime už savaitės knygą!
               <span className="ml-2">
-                Susitikimas: {getMeetingDate(currentVoting.balsavimo_pabaiga).toLocaleDateString('lt-LT')}
+                Susitikimas:{" "}
+                {getMeetingDate(
+                  currentVoting.balsavimo_pabaiga,
+                ).toLocaleDateString("lt-LT")}
               </span>
             </p>
           </Link>
-        )}
-
-        {/* Pinned Topics */}
-        {pinnedTopics.length > 0 && (
-          <div className="mb-6">
-            {pinnedTopics.map((topic) => (
-              <Link
-                key={topic.Id}
-                to={`/forumas/tema/${topic.Id}`}
-                className="block bg-yellow-50 border-l-4 border-yellow-500 rounded-lg shadow-md p-4 mb-3 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-grow">
-                    <div className="flex items-center mb-2">
-                      <span className="text-xl mr-2">📌</span>
-                      <h3 className="text-xl font-bold">{topic.pavadinimas}</h3>
-                    </div>
-                    <p className="text-gray-600 mb-2 line-clamp-2">{topic.tekstas}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="mr-4">
-                        👤 {topic?.autorius_slapyvardis || "Nežinomas"}
-                      </span>
-                      <span className="mr-4">
-                        {new Date(topic.sukurimo_data).toLocaleDateString("lt-LT")}
-                      </span>
-                      {topic.komentaru_skaicius !== undefined && (
-                        <span>💬 {topic.komentaru_skaicius}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
         )}
 
         {/* Regular Topics */}
@@ -156,18 +127,21 @@ function ForumPage() {
                   to={`/forumas/tema/${topic.Id}`}
                   className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
                 >
-                  <h3 className="text-xl font-bold mb-2">{topic.pavadinimas}</h3>
-                  <p className="text-gray-600 mb-2 line-clamp-2">{topic.tekstas}</p>
+                  <h3 className="text-xl font-bold mb-2">
+                    {topic.pavadinimas}
+                  </h3>
+                  <p className="text-gray-600 mb-2 line-clamp-2">
+                    {topic.tekstas}
+                  </p>
                   <div className="flex items-center text-sm text-gray-500">
                     <span className="mr-4">
                       👤 {topic?.autorius_slapyvardis || "Nežinomas"}
                     </span>
                     <span className="mr-4">
-                      {new Date(topic.sukurimo_data).toLocaleDateString("lt-LT")}
+                      {new Date(topic.sukurimo_data).toLocaleDateString(
+                        "lt-LT",
+                      )}
                     </span>
-                    {topic.komentaru_skaicius !== undefined && (
-                      <span>💬 {topic.komentaru_skaicius}</span>
-                    )}
                   </div>
                 </Link>
               ))}

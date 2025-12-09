@@ -19,7 +19,7 @@ function BookFormPage() {
     knygos_pavadinimas: "",
     aprasymas: "",
     AutoriusId: "",
-    leidimo_metai: new Date().toISOString().split('T')[0],
+    leidimo_metai: new Date().toISOString().split("T")[0],
     ZanrasId: "",
     psl_skaicius: "",
     ISBN: "",
@@ -41,7 +41,7 @@ function BookFormPage() {
     try {
       const [authorsResponse, genresData] = await Promise.all([
         authorsService.getAll(),
-        booksService.getGenres()
+        booksService.getGenres(),
       ]);
       setAuthors(authorsResponse.items);
       setGenres(genresData);
@@ -52,7 +52,9 @@ function BookFormPage() {
           knygos_pavadinimas: book.knygos_pavadinimas,
           aprasymas: book.aprasymas || "",
           AutoriusId: book.AutoriusId,
-          leidimo_metai: book.leidimo_metai ? new Date(book.leidimo_metai).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          leidimo_metai: book.leidimo_metai
+            ? new Date(book.leidimo_metai).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
           ZanrasId: book.ZanrasId,
           psl_skaicius: book.psl_skaicius?.toString() || "",
           ISBN: book.ISBN || "",
@@ -68,11 +70,16 @@ function BookFormPage() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      setFormData({ ...formData, [name]: (e.target as HTMLInputElement).checked });
+    if (type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: (e.target as HTMLInputElement).checked,
+      });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -82,7 +89,11 @@ function BookFormPage() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.knygos_pavadinimas || !formData.AutoriusId || !formData.ZanrasId) {
+    if (
+      !formData.knygos_pavadinimas ||
+      !formData.AutoriusId ||
+      !formData.ZanrasId
+    ) {
       setError("Užpildykite visus privalomus laukus");
       return;
     }
@@ -98,7 +109,7 @@ function BookFormPage() {
             imageUrl = await uploadsService.uploadBookCover(id, coverImage);
           } catch (uploadErr: any) {
             if (uploadErr.response?.status === 404) {
-              setError('Knyga neegzistuoja');
+              setError("Knyga neegzistuoja");
               return;
             }
             throw uploadErr;
@@ -111,7 +122,9 @@ function BookFormPage() {
           AutoriusId: formData.AutoriusId,
           leidimo_metai: formData.leidimo_metai || undefined,
           ZanrasId: formData.ZanrasId,
-          psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+          psl_skaicius: formData.psl_skaicius
+            ? parseInt(formData.psl_skaicius)
+            : undefined,
           ISBN: formData.ISBN || undefined,
           kalba: formData.kalba || undefined,
           bestseleris: formData.bestseleris,
@@ -130,7 +143,9 @@ function BookFormPage() {
           AutoriusId: formData.AutoriusId,
           leidimo_metai: formData.leidimo_metai || undefined,
           ZanrasId: formData.ZanrasId,
-          psl_skaicius: formData.psl_skaicius ? parseInt(formData.psl_skaicius) : undefined,
+          psl_skaicius: formData.psl_skaicius
+            ? parseInt(formData.psl_skaicius)
+            : undefined,
           ISBN: formData.ISBN || undefined,
           kalba: formData.kalba || undefined,
           bestseleris: formData.bestseleris,
@@ -143,21 +158,26 @@ function BookFormPage() {
         // Phase 2: Upload image if selected (now we have book ID)
         if (coverImage) {
           try {
-            const imageUrl = await uploadsService.uploadBookCover(bookId, coverImage);
+            const imageUrl = await uploadsService.uploadBookCover(
+              bookId,
+              coverImage,
+            );
 
             // Phase 3: Update book with image URL
             await booksService.update(bookId, { virselio_nuotrauka: imageUrl });
 
-            alert('Knyga sėkmingai sukurta!');
+            alert("Knyga sėkmingai sukurta!");
             navigate(`/knygos/${bookId}`);
           } catch (uploadErr) {
             // Book created but image upload failed - allow user to edit later
-            console.error('Image upload failed:', uploadErr);
-            alert('Knyga sukurta, bet nepavyko įkelti viršelio. Redaguokite knygą ir įkelkite viršelį vėliau.');
+            console.error("Image upload failed:", uploadErr);
+            alert(
+              "Knyga sukurta, bet nepavyko įkelti viršelio. Redaguokite knygą ir įkelkite viršelį vėliau.",
+            );
             navigate(`/knygos/${bookId}`);
           }
         } else {
-          alert('Knyga sėkmingai sukurta!');
+          alert("Knyga sėkmingai sukurta!");
           navigate(`/knygos/${bookId}`);
         }
       }
@@ -267,7 +287,9 @@ function BookFormPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold mb-2">Puslapių skaičius</label>
+              <label className="block font-semibold mb-2">
+                Puslapių skaičius
+              </label>
               <input
                 type="number"
                 name="psl_skaicius"
@@ -320,7 +342,9 @@ function BookFormPage() {
               onChange={handleChange}
               className="w-5 h-5"
             />
-            <label htmlFor="bestseleris" className="font-semibold">Bestseleris</label>
+            <label htmlFor="bestseleris" className="font-semibold">
+              Bestseleris
+            </label>
           </div>
 
           <div className="flex gap-4">
