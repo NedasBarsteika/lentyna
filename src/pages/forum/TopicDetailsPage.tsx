@@ -46,6 +46,7 @@ function TopicDetailsPage() {
     if (window.confirm("Ar tikrai norite ištrinti šią temą?")) {
       try {
         await nuomoniuForumasService.deleteTopic(id!);
+        alert("Ištrinta");
         navigate("/forumas");
       } catch (err) {
         alert("Nepavyko ištrinti temos");
