@@ -69,6 +69,7 @@ function BookDetailsPage() {
     if (window.confirm("Ar tikrai norite ištrinti šią knygą?")) {
       try {
         await booksService.delete(id!);
+        alert("Knyga sėkmingai ištrinta");
         navigate("/knygos");
       } catch (err) {
         alert("Nepavyko ištrinti knygos");
